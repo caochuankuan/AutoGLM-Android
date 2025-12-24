@@ -12,3 +12,4 @@ local.properties
 /app/src/test/
 .kotlin/
 yifengautogml.jks
+app/release/
