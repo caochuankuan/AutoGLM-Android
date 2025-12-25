@@ -191,7 +191,7 @@ class ModelClient(
         val request = ChatRequest(
             model = modelName,
             messages = finalMessages,
-            maxTokens = 3000
+            maxTokens = 4096
         )
         
         try {

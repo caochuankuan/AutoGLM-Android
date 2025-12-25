@@ -670,7 +670,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
             var currentPrompt = text
             var step = 0
-            val maxSteps = 20
+            val maxSteps = 100
             
             if (!DEBUG_MODE && service != null) {
                 // Show floating window and minimize app
