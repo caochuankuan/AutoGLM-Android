@@ -187,19 +187,34 @@ class ChatHistoryManager private constructor() {
     }
     
     /**
-     * 获取指定会话的分页消息
+     * 获取指定会话的分页消息（倒序分页：最新消息在前）
      */
     fun getMessagesPaged(sessionId: String, page: Int = 0): PagedResult<ChatMessage> {
-        val allMessages = getMessages(sessionId)
-        val startIndex = page * PAGE_SIZE
-        val endIndex = minOf(startIndex + PAGE_SIZE, allMessages.size)
+        val allMessages = getMessages(sessionId).sortedBy { it.timestamp } // 按时间正序排列
+        val totalCount = allMessages.size
         
-        return if (startIndex >= allMessages.size) {
-            PagedResult(emptyList(), false, allMessages.size)
+        if (totalCount == 0) {
+            return PagedResult(emptyList(), false, 0)
+        }
+        
+        if (page == 0) {
+            // 第一页：返回最新的PAGE_SIZE条消息
+            val startIndex = maxOf(0, totalCount - PAGE_SIZE)
+            val items = allMessages.subList(startIndex, totalCount)
+            val hasMore = startIndex > 0
+            return PagedResult(items, hasMore, totalCount)
         } else {
-            val items = allMessages.subList(startIndex, endIndex)
-            val hasMore = endIndex < allMessages.size
-            PagedResult(items, hasMore, allMessages.size)
+            // 后续页：返回更早的消息
+            val endIndex = totalCount - page * PAGE_SIZE
+            val startIndex = maxOf(0, endIndex - PAGE_SIZE)
+            
+            return if (startIndex >= endIndex || endIndex <= 0) {
+                PagedResult(emptyList(), false, totalCount)
+            } else {
+                val items = allMessages.subList(startIndex, endIndex)
+                val hasMore = startIndex > 0
+                PagedResult(items, hasMore, totalCount)
+            }
         }
     }
     

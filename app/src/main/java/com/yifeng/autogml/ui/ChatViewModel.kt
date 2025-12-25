@@ -420,7 +420,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
-     * 加载更多消息
+     * 加载更多消息（加载更早的历史消息）
      */
     fun loadMoreMessages() {
         val currentSession = _uiState.value.currentSession ?: return
@@ -442,7 +442,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 
                 withContext(Dispatchers.Main) {
                     _uiState.value = _uiState.value.copy(
-                        messages = newMessages + _uiState.value.messages, // 添加到开头
+                        messages = newMessages + _uiState.value.messages, // 历史消息添加到开头
                         hasMoreMessages = messagesResult.hasMore,
                         isLoadingHistory = false
                     )

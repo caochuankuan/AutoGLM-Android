@@ -106,9 +106,9 @@ fun ChatScreen(
         }
     }
     
-    // 当消息列表变化时自动滚动到底部
+    // 当消息列表变化时自动滚动到底部（但不在加载历史消息时）
     LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty()) {
+        if (uiState.messages.isNotEmpty() && !uiState.isLoadingHistory) {
             // 使用动画滚动到最新消息
             listState.animateScrollToItem(uiState.messages.size - 1)
         }
