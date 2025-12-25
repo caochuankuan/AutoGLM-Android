@@ -33,6 +33,8 @@ import kotlinx.coroutines.withContext
 
 import android.content.ComponentName
 import android.text.TextUtils
+import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.OnInitListener
 
 import com.yifeng.autogml.BuildConfig
 
@@ -72,6 +74,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private var modelClient: ModelClient? = null
     private val chatHistoryManager = ChatHistoryManager.getInstance()
     private var currentMessagePage = 0
+    
+    // 全局计时器相关
+    private var taskStartTime: Long = 0
+    private var textToSpeech: TextToSpeech? = null
+    private var isTtsInitialized = false
 
     private val prefs by lazy {
         getApplication<Application>().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -99,6 +106,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             modelClient = ModelClient(savedBaseUrl, savedKey, savedModelName, savedIsGemini)
         }
         
+        // 初始化TTS
+        initTextToSpeech()
+        
         // 加载聊天记录
         loadChatHistory()
         
@@ -114,6 +124,74 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    /**
+     * 初始化TTS
+     */
+    private fun initTextToSpeech() {
+        textToSpeech = TextToSpeech(getApplication()) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val result = textToSpeech?.setLanguage(Locale.getDefault())
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.w("ChatViewModel", "TTS language not supported")
+                } else {
+                    isTtsInitialized = true
+                    Log.d("ChatViewModel", "TTS initialized successfully")
+                }
+            } else {
+                Log.e("ChatViewModel", "TTS initialization failed")
+            }
+        }
+    }
+    
+    /**
+     * TTS播报文本
+     */
+    private fun speakText(text: String) {
+        if (isTtsInitialized && _uiState.value.isTtsEnabled && textToSpeech != null) {
+            textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
+    
+    /**
+     * 开始计时
+     */
+    private fun startTimer() {
+        taskStartTime = System.currentTimeMillis()
+        Log.d("ChatViewModel", "Task timer started at: $taskStartTime")
+    }
+    
+    /**
+     * 停止计时并播报耗时
+     */
+    private fun stopTimerAndAnnounce(reason: String = "任务完成") {
+        if (taskStartTime > 0) {
+            val elapsedTime = System.currentTimeMillis() - taskStartTime
+            val seconds = elapsedTime / 1000.0
+            
+            val timeText = if (seconds < 60) {
+                String.format("%.1f秒", seconds)
+            } else {
+                val minutes = (seconds / 60).toInt()
+                val remainingSeconds = seconds % 60
+                String.format("%d分%.1f秒", minutes, remainingSeconds)
+            }
+            
+            val announcement = "耗时$timeText"
+            Log.i("ChatViewModel", "Task completed: $announcement")
+            
+            // TTS播报耗时
+            speakText(announcement)
+            
+            // 重置计时器
+            taskStartTime = 0
+        }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        textToSpeech?.shutdown()
     }
 
     // Dynamic accessor for ActionExecutor
@@ -217,6 +295,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stopTask() {
+        stopTimerAndAnnounce("任务已停止")
         _uiState.value = _uiState.value.copy(isRunning = false, isLoading = false)
         val service = AutoGLMService.getInstance()
         service?.setTaskRunning(false)
@@ -570,6 +649,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             Log.d("AutoGLM_Debug", "Coroutine started")
             
+            // 开始计时
+            startTimer()
+            
             // 保存用户消息
             saveMessageToHistory("user", text)
             
@@ -707,6 +789,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     
                     if (action is Action.Finish) {
                         isFinished = true
+                        stopTimerAndAnnounce("任务完成")
                         _uiState.value = _uiState.value.copy(isRunning = false, isLoading = false)
                         service?.setTaskRunning(false)
                         service?.updateFloatingStatus(getApplication<Application>().getString(R.string.action_finish))
@@ -724,10 +807,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("AutoGLM_Debug", "Exception in sendMessage loop: ${e.message}", e)
+                stopTimerAndAnnounce("任务异常终止")
                 postError(getApplication<Application>().getString(R.string.error_runtime_exception, e.message))
             }
             
             if (!isFinished && _uiState.value.isRunning) {
+                if (step >= maxSteps) {
+                    stopTimerAndAnnounce("任务超时终止")
+                } else {
+                    stopTimerAndAnnounce("任务已停止")
+                }
                 _uiState.value = _uiState.value.copy(isRunning = false, isLoading = false)
                 if (!DEBUG_MODE) {
                     service?.setTaskRunning(false)
@@ -758,6 +847,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     private fun postError(msg: String) {
+        stopTimerAndAnnounce("任务出错")
         _uiState.value = _uiState.value.copy(error = msg, isRunning = false, isLoading = false)
         val service = AutoGLMService.getInstance()
         service?.setTaskRunning(false)
