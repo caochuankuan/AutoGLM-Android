@@ -39,6 +39,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import kotlin.math.roundToInt
+import android.speech.tts.TextToSpeech
+import java.util.*
 
 class FloatingWindowController(private val context: Context) : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -52,6 +54,10 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
     private var _statusText by mutableStateOf("")
     private var _isTaskRunning by mutableStateOf(true)
     private var _onStopClick: (() -> Unit)? = null
+    
+    // TTS for status text
+    private var tts: TextToSpeech? = null
+    private var isTtsReady = false
 
     // Lifecycle components required for Compose
     private val lifecycleRegistry = LifecycleRegistry(this)
@@ -62,6 +68,14 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
         _statusText = context.getString(R.string.fw_ready)
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        
+        // Initialize TTS
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.getDefault()
+                isTtsReady = true
+            }
+        }
     }
 
     fun show(onStop: () -> Unit) {
@@ -140,7 +154,19 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
     }
 
     fun updateStatus(status: String) {
+        val oldStatus = _statusText
         _statusText = status
+        
+        // 当状态文本发生变化时自动播放TTS，但排除"思考中..."
+        if (oldStatus != status && isTtsReady && tts != null && status != "思考中...") {
+            tts?.stop()
+            tts?.speak(
+                status,
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                null
+            )
+        }
     }
 
     fun setTaskRunning(running: Boolean) {
@@ -241,6 +267,12 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
             floatView = null
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            
+            // Clean up TTS
+            tts?.stop()
+            tts?.shutdown()
+            tts = null
+            isTtsReady = false
         } catch (e: Exception) {
             e.printStackTrace()
         }
