@@ -158,14 +158,22 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
         _statusText = status
         
         // 当状态文本发生变化时自动播放TTS，但排除"思考中..."，并检查TTS开关
-        if (oldStatus != status && isTtsReady && tts != null && status != "思考中..." && isTtsEnabled) {
-            tts?.stop()
-            tts?.speak(
-                status,
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                null
-            )
+        if (oldStatus != status && status != "思考中..." && isTtsEnabled) {
+            // 播报前检查TTS是否可用，不可用就重新初始化
+            if (tts == null || !isTtsReady) {
+                tts = TextToSpeech(context) { initStatus ->
+                    if (initStatus == TextToSpeech.SUCCESS) {
+                        tts?.language = Locale.getDefault()
+                        isTtsReady = true
+                        // 初始化成功后立即播报
+                        tts?.speak(status, TextToSpeech.QUEUE_FLUSH, null, null)
+                    }
+                }
+            } else {
+                // TTS可用，直接播报
+                tts?.stop()
+                tts?.speak(status, TextToSpeech.QUEUE_FLUSH, null, null)
+            }
         }
     }
 
