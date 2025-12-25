@@ -481,8 +481,8 @@ fun ChatScreen(
 fun MessageItem(message: UiMessage) {
     val isUser = message.role == "user"
     val alignment = if (isUser) Alignment.End else Alignment.Start
-    val containerColor = if (isUser) MaterialTheme.colorScheme.primary else Color.White
-    val contentColor = if (isUser) MaterialTheme.colorScheme.onPrimary else Color.Black
+    val containerColor = if (isUser) Color(0xFF07C160) else Color.White
+    val contentColor = Color.Black
 
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
