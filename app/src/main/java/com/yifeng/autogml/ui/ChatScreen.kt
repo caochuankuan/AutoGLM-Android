@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import android.util.Log
 
 fun Context.findActivity(): ComponentActivity? = when (this) {
     is ComponentActivity -> this
@@ -65,6 +66,10 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var inputText by remember { mutableStateOf("") }
+    
+    // 记录消息列表的状态，用于判断是否有新消息
+    var lastMessageCount by remember { mutableStateOf(0) }
+    var lastMessageId by remember { mutableStateOf("") }
 
     // Voice Review State
     var showVoiceReview by remember { mutableStateOf(false) }
@@ -86,6 +91,8 @@ fun ChatScreen(
                 scope.launch {
                     if (uiState.messages.isNotEmpty()) {
                         listState.animateScrollToItem(uiState.messages.size - 1)
+                        lastMessageId = uiState.messages.lastOrNull()?.id ?: ""
+                        lastMessageCount = uiState.messages.size
                     }
                 }
             }
@@ -103,21 +110,41 @@ fun ChatScreen(
         // 首次进入时滚动到底部
         if (uiState.messages.isNotEmpty()) {
             listState.scrollToItem(uiState.messages.size - 1)
+            lastMessageId = uiState.messages.lastOrNull()?.id ?: ""
+            lastMessageCount = uiState.messages.size
         }
     }
     
-    // 当消息列表变化时自动滚动到底部（但不在加载历史消息时）
-    LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty() && !uiState.isLoadingHistory) {
-            // 使用动画滚动到最新消息
+    // 当有新消息时自动滚动到底部（不包括加载历史消息）
+    LaunchedEffect(uiState.messages.lastOrNull()?.id, uiState.messages.size) {
+        val currentLastMessageId = uiState.messages.lastOrNull()?.id ?: ""
+        val currentMessageCount = uiState.messages.size
+        
+        Log.d("ChatScreen", "LaunchedEffect triggered - currentLastMessageId: $currentLastMessageId, lastMessageId: $lastMessageId, currentCount: $currentMessageCount, lastCount: $lastMessageCount, isLoadingHistory: ${uiState.isLoadingHistory}")
+        
+        // 只有在最后一条消息ID改变时才滚动（表示有新消息添加到末尾）
+        // 如果只是消息数量增加但最后消息ID没变，说明是在开头添加了历史消息
+        if (uiState.messages.isNotEmpty() && 
+            currentLastMessageId != lastMessageId && 
+            currentLastMessageId.isNotEmpty() &&
+            !uiState.isLoadingHistory &&
+            lastMessageId.isNotEmpty()) { // 确保不是初始加载
+            // 有新消息添加到末尾，滚动到底部
+            Log.d("ChatScreen", "Scrolling to bottom due to new message at end")
             listState.animateScrollToItem(uiState.messages.size - 1)
         }
+        
+        lastMessageId = currentLastMessageId
+        lastMessageCount = currentMessageCount
     }
     
     // 当切换会话时滚动到底部
     LaunchedEffect(uiState.currentSession?.id) {
         if (uiState.messages.isNotEmpty()) {
             listState.scrollToItem(uiState.messages.size - 1)
+            // 更新最后消息ID和数量
+            lastMessageId = uiState.messages.lastOrNull()?.id ?: ""
+            lastMessageCount = uiState.messages.size
         }
     }
 
