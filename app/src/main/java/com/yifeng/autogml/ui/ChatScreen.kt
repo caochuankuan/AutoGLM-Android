@@ -362,6 +362,17 @@ fun ChatScreen(
                             onClick = {
                                 viewModel.sendMessage(inputText)
                                 inputText = ""
+                                
+                                // 播放欢迎语音
+                                if (isTtsReady && tts != null) {
+                                    tts!!.stop()
+                                    tts!!.speak(
+                                        "欢迎使用遇见手机助手，马上开始为你执行",
+                                        TextToSpeech.QUEUE_FLUSH,
+                                        null,
+                                        null
+                                    )
+                                }
                             },
                             enabled = !uiState.isLoading && inputText.isNotBlank()
                         ) {
