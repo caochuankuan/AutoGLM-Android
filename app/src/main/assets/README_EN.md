@@ -1,6 +1,6 @@
-# AutoGLM Android Assistant User Guide
+# 遇见手机助手 User Guide
 
-Welcome to **AutoGLM Android Assistant**! This is an intelligent agent application based on a multimodal large model that helps you automate various tasks on your phone.
+Welcome to **遇见手机助手**! This is an intelligent agent application based on a multimodal large model that helps you automate various tasks on your phone.
 
 ## 1. Quick Start
 
@@ -20,7 +20,7 @@ This app is based on the Zhipu AI large model capabilities and requires an API K
     *   Click "Create API Key" on the page or copy an existing Key.
 
 2.  **Enter App Settings**:
-    *   Return to the AutoGLM App.
+    *   Return to the 遇见手机助手 App.
     *   Click the **Settings** icon in the upper right corner.
     *   Click **"Enter API Key"** or **"Edit API Key"**.
     *   Paste the copied API Key into the input box and save.
@@ -38,15 +38,15 @@ During task execution, a floating window will appear in the lower right corner o
 
 ### Status Details
 
-**1. AutoGLM Ready (Green)**
+**1. 遇见手机助手 Ready (Green)**
 *   **Meaning**: Indicates currently idle, waiting for instructions.
 *   **Action**: Click the **"Return to App"** button to go back to the main interface to enter new instructions.
 
-**2. AutoGLM Running (Gray)**
+**2. 遇见手机助手 Running (Gray)**
 *   **Meaning**: Indicates the AI is thinking or executing actions (e.g., "Thinking...", "Clicking Screen").
 *   **Action**: **Do not manually operate the screen** to avoid interfering with the AI. If you need to forcibly interrupt, you can click the **"Stop"** button on the floating window.
 
-**3. AutoGLM Error (Red)**
+**3. 遇见手机助手 Error (Red)**
 *   **Meaning**: Indicates a problem occurred during task execution (e.g., timeout, element not recognized).
 *   **Action**: You can click **"Stop"** or **"Return to App"** to view specific error messages.
 
