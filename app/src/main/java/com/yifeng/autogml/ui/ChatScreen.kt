@@ -82,6 +82,12 @@ fun ChatScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.checkServiceStatus()
                 viewModel.checkOverlayPermission(context)
+                // 回到应用时滚动到底部
+                scope.launch {
+                    if (uiState.messages.isNotEmpty()) {
+                        listState.animateScrollToItem(uiState.messages.size - 1)
+                    }
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -90,10 +96,29 @@ fun ChatScreen(
         }
     }
 
-    // Initial check on composition
+    // Initial check on composition and scroll to bottom
     LaunchedEffect(Unit) {
         viewModel.checkServiceStatus()
         viewModel.checkOverlayPermission(context)
+        // 首次进入时滚动到底部
+        if (uiState.messages.isNotEmpty()) {
+            listState.scrollToItem(uiState.messages.size - 1)
+        }
+    }
+    
+    // 当消息列表变化时自动滚动到底部
+    LaunchedEffect(uiState.messages.size) {
+        if (uiState.messages.isNotEmpty()) {
+            // 使用动画滚动到最新消息
+            listState.animateScrollToItem(uiState.messages.size - 1)
+        }
+    }
+    
+    // 当切换会话时滚动到底部
+    LaunchedEffect(uiState.currentSession?.id) {
+        if (uiState.messages.isNotEmpty()) {
+            listState.scrollToItem(uiState.messages.size - 1)
+        }
     }
 
     val view = LocalView.current
@@ -114,8 +139,9 @@ fun ChatScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable {
                             scope.launch {
-                                if (listState.firstVisibleItemIndex > 0) {
-                                    listState.animateScrollToItem(0)
+                                // 点击标题滚动到最新消息（底部）
+                                if (uiState.messages.isNotEmpty()) {
+                                    listState.animateScrollToItem(uiState.messages.size - 1)
                                 }
                             }
                         }
