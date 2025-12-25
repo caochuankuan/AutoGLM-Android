@@ -1,53 +1,53 @@
 name: Build Android APK
 
 on:
+  # push tag 时自动发布 
   push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]  # 只有 push tag 时触发 release 上传
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
+    tags:
+      - 'v*'
+
+  # 允许手动触发（不发 Release，只用于调试）
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
+    # 必须，否则无法创建 GitHub Release
+    permissions:
+      contents: write
+
     steps:
-      # 1. Checkout 代码
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      # 2. 设置 JDK 17
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-        
-      # 3. 赋予 gradlew 执行权限
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      
-      # 4. 构建 debug APK
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
-        
-      # 5. 上传 debug APK 到 artifact（所有分支和 PR 都上传）
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: 遇见逸风助手-Debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-      
-      # 6. 上传 debug APK 到 GitHub Release（仅 tag push 时）
-      - name: Upload Debug APK to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: 遇见逸风助手-Debug.apk
-          files: app/build/outputs/apk/debug/app-debug.apk
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # 1️⃣ 拉代码
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2️⃣ Java 环境
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # 3️⃣ gradlew 执行权限
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    # 4️⃣ 构建 Release APK
+    - name: Build Release APK
+      run: |
+        ./gradlew assembleDebug --stacktrace
+
+    # 5️⃣ 列出所有 APK（调试 + 防踩坑）
+    - name: List generated APK files
+      run: |
+        echo "===== APK files ====="
+        find app -type f | grep '\.apk' || true
+        echo "====================="
+
+    # 6️⃣ 发布到 GitHub Releases（核心）
+    - name: Publish GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        # 通配符，兼容 module / flavor / 文件名变化
+        files: app/build/outputs/apk/**/debug/*.apk
