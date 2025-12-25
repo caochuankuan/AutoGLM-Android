@@ -51,6 +51,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import android.util.Log
+import android.speech.tts.TextToSpeech
+import java.util.*
 
 fun Context.findActivity(): ComponentActivity? = when (this) {
     is ComponentActivity -> this
@@ -80,6 +82,24 @@ fun ChatScreen(
     val listState = rememberLazyListState()
 
     val scope = rememberCoroutineScope()
+    
+    // TTS initialization at ChatScreen level
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    var isTtsReady by remember { mutableStateOf(false) }
+    
+    DisposableEffect(Unit) {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.getDefault()
+                isTtsReady = true
+            }
+        }
+        
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
+    }
 
     // Check service status when app resumes (e.g. returning from Settings)
     DisposableEffect(lifecycleOwner) {
@@ -286,7 +306,11 @@ fun ChatScreen(
                         }
                         
                         items(uiState.messages) { message ->
-                            MessageItem(message)
+                            MessageItem(
+                                message = message,
+                                tts = tts,
+                                isTtsReady = isTtsReady
+                            )
                         }
                     }
 
@@ -478,7 +502,11 @@ fun ChatScreen(
 }
 
 @Composable
-fun MessageItem(message: UiMessage) {
+fun MessageItem(
+    message: UiMessage,
+    tts: TextToSpeech?,
+    isTtsReady: Boolean
+) {
     val isUser = message.role == "user"
     val alignment = if (isUser) Alignment.End else Alignment.Start
     val containerColor = if (isUser) Color(0xFF07C160) else Color.White
@@ -510,6 +538,18 @@ fun MessageItem(message: UiMessage) {
                 .widthIn(max = 300.dp)
                 .pointerInput(Unit) {
                     detectTapGestures(
+                        onTap = {
+                            // Single tap to play TTS - stop current and play new immediately
+                            if (isTtsReady && tts != null) {
+                                tts.stop() // 立即停止当前播放
+                                tts.speak(
+                                    message.content,
+                                    TextToSpeech.QUEUE_FLUSH, // 清空队列并立即播放
+                                    null,
+                                    null
+                                )
+                            }
+                        },
                         onLongPress = {
                             clipboardManager.setText(AnnotatedString(message.content))
                             Toast.makeText(
