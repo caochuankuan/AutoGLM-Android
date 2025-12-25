@@ -153,12 +153,12 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
         }
     }
 
-    fun updateStatus(status: String) {
+    fun updateStatus(status: String, isTtsEnabled: Boolean = true) {
         val oldStatus = _statusText
         _statusText = status
         
-        // 当状态文本发生变化时自动播放TTS，但排除"思考中..."
-        if (oldStatus != status && isTtsReady && tts != null && status != "思考中...") {
+        // 当状态文本发生变化时自动播放TTS，但排除"思考中..."，并检查TTS开关
+        if (oldStatus != status && isTtsReady && tts != null && status != "思考中..." && isTtsEnabled) {
             tts?.stop()
             tts?.speak(
                 status,

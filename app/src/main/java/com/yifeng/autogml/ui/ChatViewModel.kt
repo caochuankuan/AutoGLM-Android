@@ -47,6 +47,7 @@ data class ChatUiState(
     val baseUrl: String = "https://open.bigmodel.cn/api/paas/v4", // Official ZhipuAI Endpoint
     val isGemini: Boolean = false,
     val modelName: String = "autoglm-phone",
+    val isTtsEnabled: Boolean = true, // TTS开关，默认开启
     // 聊天记录相关状态
     val currentSession: ChatSession? = null,
     val sessions: List<ChatSession> = emptyList(),
@@ -84,12 +85,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val savedBaseUrl = prefs.getString("base_url", "https://open.bigmodel.cn/api/paas/v4") ?: "https://open.bigmodel.cn/api/paas/v4"
         val savedIsGemini = prefs.getBoolean("is_gemini", false)
         val savedModelName = prefs.getString("model_name", "autoglm-phone") ?: "autoglm-phone"
+        val savedIsTtsEnabled = prefs.getBoolean("is_tts_enabled", true) // 默认开启TTS
         
         _uiState.value = _uiState.value.copy(
             apiKey = savedKey,
             baseUrl = savedBaseUrl,
             isGemini = savedIsGemini,
-            modelName = savedModelName
+            modelName = savedModelName,
+            isTtsEnabled = savedIsTtsEnabled
         )
 
         if (savedKey.isNotEmpty()) {
@@ -123,7 +126,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     // Conversation history for the API
     private val apiHistory = mutableListOf<Message>()
 
-    fun updateSettings(apiKey: String, baseUrl: String, isGemini: Boolean, modelName: String) {
+    fun updateSettings(apiKey: String, baseUrl: String, isGemini: Boolean, modelName: String, isTtsEnabled: Boolean = true) {
         val finalBaseUrl = if (baseUrl.isBlank()) {
             if (isGemini) "https://generativelanguage.googleapis.com" else "https://open.bigmodel.cn/api/paas/v4"
         } else baseUrl
@@ -141,6 +144,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             putString("base_url", finalBaseUrl)
             putBoolean("is_gemini", isGemini)
             putString("model_name", finalModelName)
+            putBoolean("is_tts_enabled", isTtsEnabled)
             apply()
         }
 
@@ -154,6 +158,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             baseUrl = finalBaseUrl,
             isGemini = isGemini,
             modelName = finalModelName,
+            isTtsEnabled = isTtsEnabled,
             error = null // Clear any previous errors
         )
 
@@ -165,7 +170,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateApiKey(apiKey: String) {
         // Deprecated, use updateSettings instead but keeping for compatibility if needed temporarily
-        updateSettings(apiKey, _uiState.value.baseUrl, _uiState.value.isGemini, _uiState.value.modelName)
+        updateSettings(apiKey, _uiState.value.baseUrl, _uiState.value.isGemini, _uiState.value.modelName, _uiState.value.isTtsEnabled)
     }
 
     fun checkServiceStatus() {

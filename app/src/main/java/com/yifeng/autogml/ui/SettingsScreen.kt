@@ -32,7 +32,8 @@ fun SettingsScreen(
     baseUrl: String,
     isGemini: Boolean,
     modelName: String,
-    onSave: (String, String, Boolean, String) -> Unit,
+    isTtsEnabled: Boolean,
+    onSave: (String, String, Boolean, String, Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenDocumentation: () -> Unit
 ) {
@@ -45,6 +46,7 @@ fun SettingsScreen(
     var newBaseUrl by remember { mutableStateOf(baseUrl) }
     var newIsGemini by remember { mutableStateOf(isGemini) }
     var newModelName by remember { mutableStateOf(modelName) }
+    var newIsTtsEnabled by remember { mutableStateOf(isTtsEnabled) }
     
     val keyboardController = LocalSoftwareKeyboardController.current
     
@@ -144,6 +146,7 @@ fun SettingsScreen(
                                 newBaseUrl = baseUrl
                                 newIsGemini = isGemini
                                 newModelName = modelName
+                                newIsTtsEnabled = isTtsEnabled
                             },
                             modifier = Modifier.padding(top = 8.dp)
                         ) {
@@ -357,6 +360,7 @@ fun SettingsScreen(
                                     newBaseUrl = baseUrl
                                     newIsGemini = isGemini
                                     newModelName = modelName
+                                    newIsTtsEnabled = isTtsEnabled
                                 } else {
                                     onBack()
                                 }
@@ -367,7 +371,7 @@ fun SettingsScreen(
                             Button(
                                 onClick = { 
                                     // Allow saving empty key (to restore default) or valid key
-                                    onSave(newKey, newBaseUrl, newIsGemini, newModelName)
+                                    onSave(newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled)
                                     onBack() 
                                 },
                                 // Enable save button if key is not blank OR if user cleared it (to reset to default)
@@ -378,6 +382,40 @@ fun SettingsScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // TTS Settings Card (独立的设置项)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.tts_enabled),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = stringResource(R.string.tts_enabled_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = newIsTtsEnabled,
+                        onCheckedChange = { 
+                            newIsTtsEnabled = it
+                            // 立即保存TTS设置
+                            onSave(apiKey, baseUrl, isGemini, modelName, it)
+                        }
+                    )
                 }
             }
 
@@ -423,7 +461,8 @@ fun SettingsScreenPreview() {
         baseUrl = "https://open.bigmodel.cn/api/paas/v4",
         isGemini = false,
         modelName = "autoglm-phone",
-        onSave = { _, _, _, _ -> },
+        isTtsEnabled = true,
+        onSave = { _, _, _, _, _ -> },
         onBack = {},
         onOpenDocumentation = {}
     )

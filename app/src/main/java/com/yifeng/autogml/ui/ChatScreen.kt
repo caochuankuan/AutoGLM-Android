@@ -309,7 +309,8 @@ fun ChatScreen(
                             MessageItem(
                                 message = message,
                                 tts = tts,
-                                isTtsReady = isTtsReady
+                                isTtsReady = isTtsReady,
+                                isTtsEnabled = uiState.isTtsEnabled
                             )
                         }
                     }
@@ -364,7 +365,7 @@ fun ChatScreen(
                                 inputText = ""
                                 
                                 // 播放欢迎语音
-                                if (isTtsReady && tts != null) {
+                                if (isTtsReady && tts != null && uiState.isTtsEnabled) {
                                     tts!!.stop()
                                     tts!!.speak(
                                         "欢迎使用遇见手机助手，马上开始为你执行",
@@ -516,7 +517,8 @@ fun ChatScreen(
 fun MessageItem(
     message: UiMessage,
     tts: TextToSpeech?,
-    isTtsReady: Boolean
+    isTtsReady: Boolean,
+    isTtsEnabled: Boolean = true
 ) {
     val isUser = message.role == "user"
     val alignment = if (isUser) Alignment.End else Alignment.Start
@@ -551,7 +553,7 @@ fun MessageItem(
                     detectTapGestures(
                         onTap = {
                             // Single tap to play TTS - stop current and play new immediately
-                            if (isTtsReady && tts != null) {
+                            if (isTtsReady && tts != null && isTtsEnabled) {
                                 tts.stop() // 立即停止当前播放
                                 tts.speak(
                                     message.content,

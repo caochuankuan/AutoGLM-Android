@@ -50,8 +50,9 @@ class  MainActivity : ComponentActivity() {
                                 baseUrl = uiState.baseUrl,
                                 isGemini = uiState.isGemini,
                                 modelName = uiState.modelName,
-                                onSave = { newKey, newBaseUrl, newIsGemini, newModelName ->
-                                    viewModel.updateSettings(newKey, newBaseUrl, newIsGemini, newModelName)
+                                isTtsEnabled = uiState.isTtsEnabled,
+                                onSave = { newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled ->
+                                    viewModel.updateSettings(newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled)
                                 },
                                 onBack = { navController.popBackStack() },
                                 onOpenDocumentation = { navController.navigate("documentation") }

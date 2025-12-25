@@ -3,6 +3,7 @@ package com.yifeng.autogml.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.animation.ValueAnimator
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -73,7 +74,10 @@ class AutoGLMService : AccessibilityService() {
 
     fun updateFloatingStatus(text: String) {
         Handler(Looper.getMainLooper()).post {
-            floatingWindowController?.updateStatus(text)
+            // 获取TTS设置
+            val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            val isTtsEnabled = prefs.getBoolean("is_tts_enabled", true)
+            floatingWindowController?.updateStatus(text, isTtsEnabled)
         }
     }
 
