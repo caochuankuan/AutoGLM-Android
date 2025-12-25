@@ -22,7 +22,7 @@ jobs:
         distribution: 'temurin'
         
     - name: Grant execute permission for gradlew
-      run: chmod +x AutoGMLAndroid/gradlew
+      run: chmod +x AutoGLM-Android/gradlew
       
     - name: Build Debug APK
       run: |
@@ -33,4 +33,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: 遇见逸风助手-Debug
-        path: AutoGMLAndroid/app/build/outputs/apk/debug/app-debug.apk
+        path: AutoGLM-Android/app/build/outputs/apk/debug/app-debug.apk
