@@ -48,8 +48,11 @@
 
 ## 安装使用
 
-1. 下载并安装 APK 文件
-2. 打开应用，(可选)进入设置页面配置 API Key
+1.  获取 API Key：
+    *   访问 [智谱AI开放平台 - API Key管理](https://bigmodel.cn/usercenter/proj-mgmt/apikeys)。
+    *   登录您的账号（支持手机号或微信扫码）。
+    *   在页面中点击“创建 API Key”或复制已有的 Key。
+2. 打开应用，进入设置页面配置 API Key
 3. 开启无障碍服务权限
 4. 授予悬浮窗权限
 5. 开始使用智能助手功能
