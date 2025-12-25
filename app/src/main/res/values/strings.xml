@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">智谱手机助手</string>
+    <string name="app_name">遇见手机助手</string>
     <string name="accessibility_service_description">AutoGLM AI 代理服务，用于自动化手机操作。</string>
 
     <!-- ChatScreen -->
-    <string name="chat_title">智谱手机助手</string>
+    <string name="chat_title">遇见手机助手</string>
     <string name="input_placeholder">输入你的指令...</string>
     <string name="send_button">发送</string>
     <string name="accessibility_error">请先开启无障碍服务</string>
@@ -100,4 +100,8 @@
     <string name="clear_chat_title">清空聊天记录</string>
     <string name="clear_chat_message">确定要清空所有聊天记录吗？</string>
     <string name="confirm">确定</string>
+
+    <!-- TTS Settings -->
+    <string name="tts_enabled">状态语音播报</string>
+    <string name="tts_enabled_description">开启后会语音播报任务状态</string>
 </resources>
