@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -24,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import com.yifeng.autogml.BuildConfig
 import com.yifeng.autogml.R
 
-// Updated by AI: Settings Screen with i18n support
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -32,8 +32,6 @@ fun SettingsScreen(
     baseUrl: String,
     isGemini: Boolean,
     modelName: String,
-    currentLanguage: String,
-    onLanguageChange: (String) -> Unit,
     onSave: (String, String, Boolean, String) -> Unit,
     onBack: () -> Unit,
     onOpenDocumentation: () -> Unit
@@ -55,7 +53,7 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -65,16 +63,7 @@ fun SettingsScreen(
                         )
                     }
                 },
-                actions = {
-                    TextButton(onClick = {
-                        onLanguageChange(if (currentLanguage == "zh") "en" else "zh")
-                    }) {
-                        Text(
-                            text = if (currentLanguage == "zh") "English" else "中文",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                }
+                actions = {}
             )
         }
     ) { innerPadding ->
@@ -434,8 +423,6 @@ fun SettingsScreenPreview() {
         baseUrl = "https://open.bigmodel.cn/api/paas/v4",
         isGemini = false,
         modelName = "autoglm-phone",
-        currentLanguage = "en",
-        onLanguageChange = {},
         onSave = { _, _, _, _ -> },
         onBack = {},
         onOpenDocumentation = {}

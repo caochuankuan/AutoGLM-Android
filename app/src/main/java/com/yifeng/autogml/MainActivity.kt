@@ -16,7 +16,6 @@ import com.yifeng.autogml.ui.ChatScreen
 import com.yifeng.autogml.ui.ChatViewModel
 import com.yifeng.autogml.ui.SettingsScreen
 import com.yifeng.autogml.ui.MarkdownViewerScreen
-import java.util.Locale
 
 class  MainActivity : ComponentActivity() {
     
@@ -25,10 +24,7 @@ class  MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Apply saved locale before super.onCreate
         val prefs = getSharedPreferences("app_settings", MODE_PRIVATE)
-        val savedLang = prefs.getString("language_code", "zh") ?: "zh"
-        val locale = if (savedLang == "zh") Locale.CHINESE else Locale.ENGLISH
         val config = resources.configuration
-        config.setLocale(locale)
         resources.updateConfiguration(config, resources.displayMetrics)
 
         super.onCreate(savedInstanceState)
@@ -54,15 +50,6 @@ class  MainActivity : ComponentActivity() {
                                 baseUrl = uiState.baseUrl,
                                 isGemini = uiState.isGemini,
                                 modelName = uiState.modelName,
-                                currentLanguage = savedLang,
-                                onLanguageChange = { newLang ->
-                                    val editor = prefs.edit()
-                                    editor.putString("language_code", newLang)
-                                    editor.apply()
-                                    // Recreate activity to apply locale change
-                                    finish()
-                                    startActivity(intent)
-                                },
                                 onSave = { newKey, newBaseUrl, newIsGemini, newModelName ->
                                     viewModel.updateSettings(newKey, newBaseUrl, newIsGemini, newModelName)
                                 },
@@ -72,7 +59,6 @@ class  MainActivity : ComponentActivity() {
                         }
                         composable("documentation") {
                             MarkdownViewerScreen(
-                                initialLanguage = savedLang,
                                 onBack = { navController.popBackStack() }
                             )
                         }
