@@ -15,6 +15,10 @@ import com.yifeng.autogml.network.Message
 import com.yifeng.autogml.network.ModelClient
 import com.yifeng.autogml.service.AutoGLMService
 import com.yifeng.autogml.R
+import com.yifeng.autogml.database.ChatHistoryManager
+import com.yifeng.autogml.database.ChatSession
+import com.yifeng.autogml.database.ChatMessage
+import com.yifeng.autogml.database.PagedResult
 import java.text.SimpleDateFormat
 import java.util.Date
 import android.os.Build
@@ -42,13 +46,21 @@ data class ChatUiState(
     val apiKey: String = "",
     val baseUrl: String = "https://open.bigmodel.cn/api/paas/v4", // Official ZhipuAI Endpoint
     val isGemini: Boolean = false,
-    val modelName: String = "autoglm-phone"
+    val modelName: String = "autoglm-phone",
+    // 聊天记录相关状态
+    val currentSession: ChatSession? = null,
+    val sessions: List<ChatSession> = emptyList(),
+    val hasMoreMessages: Boolean = false,
+    val hasMoreSessions: Boolean = false,
+    val isLoadingHistory: Boolean = false
 )
 
 data class UiMessage(
     val role: String,
     val content: String,
-    val image: Bitmap? = null
+    val image: Bitmap? = null,
+    val timestamp: Long = System.currentTimeMillis(),
+    val id: String = ""
 )
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
@@ -57,6 +69,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     val uiState = _uiState.asStateFlow()
 
     private var modelClient: ModelClient? = null
+    private val chatHistoryManager = ChatHistoryManager.getInstance()
+    private var currentMessagePage = 0
 
     private val prefs by lazy {
         getApplication<Application>().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -81,6 +95,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (savedKey.isNotEmpty()) {
             modelClient = ModelClient(savedBaseUrl, savedKey, savedModelName, savedIsGemini)
         }
+        
+        // 加载聊天记录
+        loadChatHistory()
         
         // Observe service connection status
         viewModelScope.launch {
@@ -202,17 +219,309 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun clearMessages() {
+        val currentSession = _uiState.value.currentSession
+        if (currentSession != null) {
+            chatHistoryManager.clearMessages(currentSession.id)
+        }
         _uiState.value = _uiState.value.copy(messages = emptyList())
         apiHistory.clear()
+        currentMessagePage = 0
+    }
+    
+    // ==================== 聊天记录管理 ====================
+    
+    /**
+     * 加载聊天记录
+     */
+    private fun loadChatHistory() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 获取当前会话
+                val currentSessionId = chatHistoryManager.getCurrentSessionId()
+                val currentSession = if (currentSessionId != null) {
+                    chatHistoryManager.getSessions().find { it.id == currentSessionId }
+                } else null
+                
+                // 获取会话列表
+                val sessionsResult = chatHistoryManager.getSessionsPaged(0)
+                
+                // 获取当前会话的消息
+                val messages = if (currentSession != null) {
+                    val messagesResult = chatHistoryManager.getMessagesPaged(currentSession.id, 0)
+                    messagesResult.items.map { chatMessage ->
+                        UiMessage(
+                            role = chatMessage.role,
+                            content = chatMessage.content,
+                            timestamp = chatMessage.timestamp,
+                            id = chatMessage.id
+                        )
+                    }
+                } else emptyList()
+                
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        currentSession = currentSession,
+                        sessions = sessionsResult.items,
+                        messages = messages,
+                        hasMoreSessions = sessionsResult.hasMore,
+                        hasMoreMessages = if (currentSession != null) {
+                            chatHistoryManager.getMessagesPaged(currentSession.id, 0).hasMore
+                        } else false
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to load chat history", e)
+            }
+        }
+    }
+    
+    /**
+     * 创建新会话
+     */
+    fun createNewSession(title: String = "新对话") {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val session = chatHistoryManager.createSession(title)
+                
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        currentSession = session,
+                        messages = emptyList(),
+                        hasMoreMessages = false
+                    )
+                    apiHistory.clear()
+                    currentMessagePage = 0
+                }
+                
+                // 重新加载会话列表
+                loadSessions()
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to create new session", e)
+            }
+        }
+    }
+    
+    /**
+     * 切换到指定会话
+     */
+    fun switchToSession(sessionId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                chatHistoryManager.setCurrentSession(sessionId)
+                val session = chatHistoryManager.getSessions().find { it.id == sessionId }
+                
+                if (session != null) {
+                    val messagesResult = chatHistoryManager.getMessagesPaged(sessionId, 0)
+                    val messages = messagesResult.items.map { chatMessage ->
+                        UiMessage(
+                            role = chatMessage.role,
+                            content = chatMessage.content,
+                            timestamp = chatMessage.timestamp,
+                            id = chatMessage.id
+                        )
+                    }
+                    
+                    withContext(Dispatchers.Main) {
+                        _uiState.value = _uiState.value.copy(
+                            currentSession = session,
+                            messages = messages,
+                            hasMoreMessages = messagesResult.hasMore
+                        )
+                        apiHistory.clear()
+                        currentMessagePage = 0
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to switch session", e)
+            }
+        }
+    }
+    
+    /**
+     * 删除会话
+     */
+    fun deleteSession(sessionId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                chatHistoryManager.deleteSession(sessionId)
+                
+                // 如果删除的是当前会话，创建新会话
+                if (_uiState.value.currentSession?.id == sessionId) {
+                    val newSession = chatHistoryManager.createSession()
+                    withContext(Dispatchers.Main) {
+                        _uiState.value = _uiState.value.copy(
+                            currentSession = newSession,
+                            messages = emptyList(),
+                            hasMoreMessages = false
+                        )
+                        apiHistory.clear()
+                        currentMessagePage = 0
+                    }
+                }
+                
+                // 重新加载会话列表
+                loadSessions()
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to delete session", e)
+            }
+        }
+    }
+    
+    /**
+     * 更新会话标题
+     */
+    fun updateSessionTitle(sessionId: String, title: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                chatHistoryManager.updateSession(sessionId, title)
+                
+                // 更新UI状态
+                val sessions = _uiState.value.sessions.map { session ->
+                    if (session.id == sessionId) {
+                        session.copy(title = title, updatedAt = System.currentTimeMillis())
+                    } else session
+                }
+                
+                val currentSession = if (_uiState.value.currentSession?.id == sessionId) {
+                    _uiState.value.currentSession?.copy(title = title, updatedAt = System.currentTimeMillis())
+                } else _uiState.value.currentSession
+                
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        sessions = sessions,
+                        currentSession = currentSession
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to update session title", e)
+            }
+        }
+    }
+    
+    /**
+     * 加载更多会话
+     */
+    fun loadMoreSessions() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val currentPage = _uiState.value.sessions.size / 20
+                val sessionsResult = chatHistoryManager.getSessionsPaged(currentPage)
+                
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        sessions = _uiState.value.sessions + sessionsResult.items,
+                        hasMoreSessions = sessionsResult.hasMore
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to load more sessions", e)
+            }
+        }
+    }
+    
+    /**
+     * 加载更多消息
+     */
+    fun loadMoreMessages() {
+        val currentSession = _uiState.value.currentSession ?: return
         
-        // Add welcome message if needed, or keep empty
-        // _uiState.value = _uiState.value.copy(messages = listOf(UiMessage("assistant", getApplication<Application>().getString(R.string.welcome_message))))
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                _uiState.value = _uiState.value.copy(isLoadingHistory = true)
+                
+                currentMessagePage++
+                val messagesResult = chatHistoryManager.getMessagesPaged(currentSession.id, currentMessagePage)
+                val newMessages = messagesResult.items.map { chatMessage ->
+                    UiMessage(
+                        role = chatMessage.role,
+                        content = chatMessage.content,
+                        timestamp = chatMessage.timestamp,
+                        id = chatMessage.id
+                    )
+                }
+                
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        messages = newMessages + _uiState.value.messages, // 添加到开头
+                        hasMoreMessages = messagesResult.hasMore,
+                        isLoadingHistory = false
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to load more messages", e)
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(isLoadingHistory = false)
+                }
+            }
+        }
+    }
+    
+    /**
+     * 重新加载会话列表
+     */
+    private fun loadSessions() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val sessionsResult = chatHistoryManager.getSessionsPaged(0)
+                
+                withContext(Dispatchers.Main) {
+                    _uiState.value = _uiState.value.copy(
+                        sessions = sessionsResult.items,
+                        hasMoreSessions = sessionsResult.hasMore
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to load sessions", e)
+            }
+        }
+    }
+    
+    /**
+     * 搜索消息
+     */
+    fun searchMessages(query: String): List<ChatMessage> {
+        return if (query.isBlank()) {
+            emptyList()
+        } else {
+            chatHistoryManager.searchAllMessages(query)
+        }
+    }
+    
+    /**
+     * 保存消息到当前会话
+     */
+    private fun saveMessageToHistory(role: String, content: String, hasImage: Boolean = false) {
+        val currentSession = _uiState.value.currentSession
+        if (currentSession != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    chatHistoryManager.addMessage(currentSession.id, role, content, hasImage)
+                } catch (e: Exception) {
+                    Log.e("ChatViewModel", "Failed to save message to history", e)
+                }
+            }
+        }
     }
 
     fun sendMessage(text: String) {
         Log.d("AutoGLM_Debug", "sendMessage called with text: $text")
         if (text.isBlank()) return
         
+        // 确保有当前会话
+        if (_uiState.value.currentSession == null) {
+            createNewSession("新对话")
+            // 等待会话创建完成后再发送消息
+            viewModelScope.launch {
+                delay(100) // 短暂延迟确保会话创建完成
+                sendMessageInternal(text)
+            }
+            return
+        }
+        
+        sendMessageInternal(text)
+    }
+    
+    private fun sendMessageInternal(text: String) {
         if (modelClient == null) {
             Log.d("AutoGLM_Debug", "modelClient is null, initializing...")
             // Try to init with current state if not init
@@ -255,8 +564,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch(Dispatchers.IO) {
             Log.d("AutoGLM_Debug", "Coroutine started")
+            
+            // 保存用户消息
+            saveMessageToHistory("user", text)
+            
             _uiState.value = _uiState.value.copy(
-                messages = _uiState.value.messages + UiMessage("user", text),
+                messages = _uiState.value.messages + UiMessage("user", text, timestamp = System.currentTimeMillis()),
                 isLoading = true,
                 isRunning = true,
                 error = null
@@ -358,8 +671,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     // Add Assistant response to history
                     apiHistory.add(Message("assistant", "<think>$thinking</think><answer>$actionStr</answer>"))
                     
+                    // 保存助手消息
+                    saveMessageToHistory("assistant", responseText)
+                    
                     _uiState.value = _uiState.value.copy(
-                        messages = _uiState.value.messages + UiMessage("assistant", responseText)
+                        messages = _uiState.value.messages + UiMessage("assistant", responseText, timestamp = System.currentTimeMillis())
                     )
 
                     // If DEBUG_MODE, stop here after one round

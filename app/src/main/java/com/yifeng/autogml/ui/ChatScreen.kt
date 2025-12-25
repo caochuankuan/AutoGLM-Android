@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -209,6 +210,28 @@ fun ChatScreen(
                         reverseLayout = false,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // 加载更多历史消息的指示器
+                        if (uiState.hasMoreMessages) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (uiState.isLoadingHistory) {
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                    } else {
+                                        TextButton(
+                                            onClick = { viewModel.loadMoreMessages() }
+                                        ) {
+                                            Text("加载更多历史消息")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
                         items(uiState.messages) { message ->
                             MessageItem(message)
                         }

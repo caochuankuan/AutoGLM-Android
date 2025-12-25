@@ -89,4 +89,7 @@ dependencies {
 
     // Markdown
     implementation("com.github.jeziellago:compose-markdown:0.3.7")
+    
+    // MMKV for chat history persistence
+    implementation("com.tencent:mmkv:2.3.0")
 }
