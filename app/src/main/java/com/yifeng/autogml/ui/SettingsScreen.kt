@@ -3,6 +3,7 @@ package com.yifeng.autogml.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.OpenInNew
@@ -17,9 +18,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.yifeng.autogml.BuildConfig
@@ -490,6 +496,55 @@ fun SettingsScreen(
                             text = statusText,
                             style = MaterialTheme.typography.bodySmall,
                             color = statusColor
+                        )
+                    }
+
+                    // Shizuku安装提示
+                    if (newIsShizukuEnabled) {
+                        val uriHandler = LocalUriHandler.current
+
+                        val annotatedText = buildAnnotatedString {
+                            append("如需使用Shizuku模式，请安装 ")
+
+                            // Shizuku链接
+                            pushStringAnnotation(tag = "shizuku", annotation = "https://shizuku.rikka.app/download/")
+                            withStyle(style = SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            )) {
+                                append("Shizuku")
+                            }
+                            pop()
+
+                            append(" + ")
+
+                            // ADBKeyBoard链接
+                            pushStringAnnotation(tag = "adbkeyboard", annotation = "https://github.com/senzhk/ADBKeyBoard")
+                            withStyle(style = SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            )) {
+                                append("ADBKeyBoard")
+                            }
+                            pop()
+                        }
+
+                        ClickableText(
+                            text = annotatedText,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            modifier = Modifier.padding(top = 8.dp),
+                            onClick = { offset ->
+                                annotatedText.getStringAnnotations(tag = "shizuku", start = offset, end = offset)
+                                    .firstOrNull()?.let { annotation ->
+                                        uriHandler.openUri(annotation.item)
+                                    }
+                                annotatedText.getStringAnnotations(tag = "adbkeyboard", start = offset, end = offset)
+                                    .firstOrNull()?.let { annotation ->
+                                        uriHandler.openUri(annotation.item)
+                                    }
+                            }
                         )
                     }
                 }
