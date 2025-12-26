@@ -51,8 +51,9 @@ class  MainActivity : ComponentActivity() {
                                 isGemini = uiState.isGemini,
                                 modelName = uiState.modelName,
                                 isTtsEnabled = uiState.isTtsEnabled,
-                                onSave = { newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled ->
-                                    viewModel.updateSettings(newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled)
+                                isShizukuEnabled = uiState.isShizukuEnabled,
+                                onSave = { newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled, newIsShizukuEnabled ->
+                                    viewModel.updateSettings(newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled, newIsShizukuEnabled)
                                 },
                                 onBack = { navController.popBackStack() },
                                 onOpenDocumentation = { navController.navigate("documentation") }

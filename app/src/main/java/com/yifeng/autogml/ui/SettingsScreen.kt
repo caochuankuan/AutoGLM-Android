@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.yifeng.autogml.BuildConfig
 import com.yifeng.autogml.R
+import com.yifeng.autogml.shizuku.ShizukuHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +34,8 @@ fun SettingsScreen(
     isGemini: Boolean,
     modelName: String,
     isTtsEnabled: Boolean,
-    onSave: (String, String, Boolean, String, Boolean) -> Unit,
+    isShizukuEnabled: Boolean,
+    onSave: (String, String, Boolean, String, Boolean, Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenDocumentation: () -> Unit
 ) {
@@ -47,6 +49,7 @@ fun SettingsScreen(
     var newIsGemini by remember { mutableStateOf(isGemini) }
     var newModelName by remember { mutableStateOf(modelName) }
     var newIsTtsEnabled by remember { mutableStateOf(isTtsEnabled) }
+    var newIsShizukuEnabled by remember { mutableStateOf(isShizukuEnabled) }
     
     val keyboardController = LocalSoftwareKeyboardController.current
     
@@ -361,6 +364,8 @@ fun SettingsScreen(
                                     newIsGemini = isGemini
                                     newModelName = modelName
                                     newIsTtsEnabled = isTtsEnabled
+                                    newIsShizukuEnabled = isShizukuEnabled
+                                    newIsShizukuEnabled = isShizukuEnabled
                                 } else {
                                     onBack()
                                 }
@@ -371,7 +376,7 @@ fun SettingsScreen(
                             Button(
                                 onClick = { 
                                     // Allow saving empty key (to restore default) or valid key
-                                    onSave(newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled)
+                                    onSave(newKey, newBaseUrl, newIsGemini, newModelName, newIsTtsEnabled, newIsShizukuEnabled)
                                     onBack() 
                                 },
                                 // Enable save button if key is not blank OR if user cleared it (to reset to default)
@@ -413,9 +418,80 @@ fun SettingsScreen(
                         onCheckedChange = { 
                             newIsTtsEnabled = it
                             // 立即保存TTS设置
-                            onSave(apiKey, baseUrl, isGemini, modelName, it)
+                            onSave(apiKey, baseUrl, isGemini, modelName, it, isShizukuEnabled)
                         }
                     )
+                }
+            }
+
+            // Shizuku Settings Card (独立的设置项)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Shizuku模式",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "使用Shizuku执行操作，需要先安装并启动Shizuku服务",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = newIsShizukuEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    // 开启Shizuku模式时，先检查并申请权限
+                                    if (ShizukuHelper.isShizukuAvailable()) {
+                                        if (!ShizukuHelper.hasShizukuPermission()) {
+                                            ShizukuHelper.requestShizukuPermission()
+                                        }
+                                        newIsShizukuEnabled = enabled
+                                        onSave(apiKey, baseUrl, isGemini, modelName, isTtsEnabled, enabled)
+                                    } else {
+                                        // Shizuku不可用，保持关闭状态
+                                        newIsShizukuEnabled = false
+                                    }
+                                } else {
+                                    newIsShizukuEnabled = enabled
+                                    onSave(apiKey, baseUrl, isGemini, modelName, isTtsEnabled, enabled)
+                                }
+                            }
+                        )
+                    }
+                    
+                    // Shizuku状态指示器
+                    if (newIsShizukuEnabled) {
+                        val statusText = when {
+                            !ShizukuHelper.isShizukuAvailable() -> "状态: Shizuku服务未运行"
+                            !ShizukuHelper.hasShizukuPermission() -> "状态: 等待权限授予"
+                            else -> "状态: Shizuku已就绪"
+                        }
+                        val statusColor = when {
+                            !ShizukuHelper.isShizukuAvailable() -> MaterialTheme.colorScheme.error
+                            !ShizukuHelper.hasShizukuPermission() -> MaterialTheme.colorScheme.tertiary
+                            else -> MaterialTheme.colorScheme.primary
+                        }
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = statusColor
+                        )
+                    }
                 }
             }
 
@@ -462,7 +538,8 @@ fun SettingsScreenPreview() {
         isGemini = false,
         modelName = "autoglm-phone",
         isTtsEnabled = true,
-        onSave = { _, _, _, _, _ -> },
+        isShizukuEnabled = false,
+        onSave = { _, _, _, _, _, _ -> },
         onBack = {},
         onOpenDocumentation = {}
     )

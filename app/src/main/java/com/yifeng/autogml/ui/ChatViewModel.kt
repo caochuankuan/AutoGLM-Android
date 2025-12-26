@@ -37,6 +37,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 
 import com.yifeng.autogml.BuildConfig
+import com.yifeng.autogml.shizuku.ShizukuHelper
 
 data class ChatUiState(
     val messages: List<UiMessage> = emptyList(),
@@ -50,6 +51,7 @@ data class ChatUiState(
     val isGemini: Boolean = false,
     val modelName: String = "autoglm-phone",
     val isTtsEnabled: Boolean = true, // TTS开关，默认开启
+    val isShizukuEnabled: Boolean = false, // Shizuku模式开关，默认关闭
     // 聊天记录相关状态
     val currentSession: ChatSession? = null,
     val sessions: List<ChatSession> = emptyList(),
@@ -93,13 +95,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val savedIsGemini = prefs.getBoolean("is_gemini", false)
         val savedModelName = prefs.getString("model_name", "autoglm-phone") ?: "autoglm-phone"
         val savedIsTtsEnabled = prefs.getBoolean("is_tts_enabled", true) // 默认开启TTS
+        val savedIsShizukuEnabled = prefs.getBoolean("is_shizuku_enabled", false) // 默认关闭Shizuku
         
         _uiState.value = _uiState.value.copy(
             apiKey = savedKey,
             baseUrl = savedBaseUrl,
             isGemini = savedIsGemini,
             modelName = savedModelName,
-            isTtsEnabled = savedIsTtsEnabled
+            isTtsEnabled = savedIsTtsEnabled,
+            isShizukuEnabled = savedIsShizukuEnabled
         )
 
         if (savedKey.isNotEmpty()) {
@@ -108,6 +112,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         
         // 初始化TTS
         initTextToSpeech()
+        
+        // 初始化Shizuku（如果启用）
+        if (savedIsShizukuEnabled) {
+            initShizuku()
+        }
         
         // 加载聊天记录
         loadChatHistory()
@@ -155,6 +164,35 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
+     * 初始化Shizuku
+     */
+    private fun initShizuku() {
+        viewModelScope.launch {
+            try {
+                Log.i("ChatViewModel", "🔧 开始初始化Shizuku...")
+                if (ShizukuHelper.isShizukuAvailable()) {
+                    if (!ShizukuHelper.hasShizukuPermission()) {
+                        Log.i("ChatViewModel", "📋 Shizuku服务可用，正在请求权限...")
+                        ShizukuHelper.requestShizukuPermission()
+                    } else {
+                        Log.i("ChatViewModel", "✅ Shizuku权限已存在，初始化完成")
+                    }
+                } else {
+                    Log.w("ChatViewModel", "⚠️ Shizuku服务不可用，自动关闭Shizuku模式")
+                    // 如果Shizuku不可用，自动关闭Shizuku模式
+                    _uiState.value = _uiState.value.copy(isShizukuEnabled = false)
+                    prefs.edit().putBoolean("is_shizuku_enabled", false).apply()
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "💥 Shizuku初始化失败，自动关闭Shizuku模式", e)
+                // 出错时也关闭Shizuku模式
+                _uiState.value = _uiState.value.copy(isShizukuEnabled = false)
+                prefs.edit().putBoolean("is_shizuku_enabled", false).apply()
+            }
+        }
+    }
+    
+    /**
      * 开始计时
      */
     private fun startTimer() {
@@ -189,9 +227,21 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    /**
+     * 检查Shizuku状态
+     */
+    fun checkShizukuStatus(): String {
+        return when {
+            !ShizukuHelper.isShizukuAvailable() -> "Shizuku服务未运行"
+            !ShizukuHelper.hasShizukuPermission() -> "Shizuku权限未授予"
+            else -> "Shizuku已就绪"
+        }
+    }
+    
     override fun onCleared() {
         super.onCleared()
         textToSpeech?.shutdown()
+        ShizukuHelper.cleanup()
     }
 
     // Dynamic accessor for ActionExecutor
@@ -204,7 +254,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     // Conversation history for the API
     private val apiHistory = mutableListOf<Message>()
 
-    fun updateSettings(apiKey: String, baseUrl: String, isGemini: Boolean, modelName: String, isTtsEnabled: Boolean = true) {
+    fun updateSettings(apiKey: String, baseUrl: String, isGemini: Boolean, modelName: String, isTtsEnabled: Boolean = true, isShizukuEnabled: Boolean = false) {
         val finalBaseUrl = if (baseUrl.isBlank()) {
             if (isGemini) "https://generativelanguage.googleapis.com" else "https://open.bigmodel.cn/api/paas/v4"
         } else baseUrl
@@ -223,6 +273,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             putBoolean("is_gemini", isGemini)
             putString("model_name", finalModelName)
             putBoolean("is_tts_enabled", isTtsEnabled)
+            putBoolean("is_shizuku_enabled", isShizukuEnabled)
             apply()
         }
 
@@ -237,12 +288,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             isGemini = isGemini,
             modelName = finalModelName,
             isTtsEnabled = isTtsEnabled,
+            isShizukuEnabled = isShizukuEnabled,
             error = null // Clear any previous errors
         )
 
         // Re-initialize ModelClient
         if (effectiveKey.isNotEmpty()) {
             modelClient = ModelClient(finalBaseUrl, effectiveKey, finalModelName, isGemini)
+        }
+        
+        // 初始化或关闭Shizuku
+        if (isShizukuEnabled) {
+            initShizuku()
         }
     }
 

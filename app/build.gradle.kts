@@ -92,4 +92,8 @@ dependencies {
     
     // MMKV for chat history persistence
     implementation("com.tencent:mmkv:2.3.0")
+    
+    // Shizuku
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
 }
