@@ -97,11 +97,41 @@ object ShizukuHelper {
     
     /**
      * 输入文本
+     * 分步执行：启用ADBKeyboard -> 切换到ADBKeyboard -> 等待 -> 发送文本 -> 重置输入法
      */
     fun inputText(text: String): Boolean {
-        // 对于包含空格的文本，需要特殊处理
-        val escapedText = text.replace("\"", "\\\"").replace("'", "\\'")
-        return executeInputCommand("input text \"$escapedText\"")
+        try {
+            // 对于包含特殊字符的文本，需要转义处理
+            val escapedText = text.replace("'", "'\"'\"'")
+            
+            // 1. 启用ADBKeyboard
+            if (!executeInputCommand("ime enable com.android.adbkeyboard/.AdbIME")) {
+                Log.e(TAG, "启用ADBKeyboard失败")
+                return false
+            }
+            
+            // 2. 切换到ADBKeyboard
+            if (!executeInputCommand("ime set com.android.adbkeyboard/.AdbIME")) {
+                Log.e(TAG, "切换到ADBKeyboard失败")
+                return false
+            }
+            
+            // 3. 等待输入法切换完成
+            Thread.sleep(200)
+            
+            // 4. 发送文本广播
+            val broadcastResult = executeInputCommand("am broadcast -a ADB_INPUT_TEXT --es msg '$escapedText'")
+            
+            // 5. 重置输入法
+            executeInputCommand("ime reset")
+            
+            return broadcastResult
+        } catch (e: Exception) {
+            Log.e(TAG, "输入文本异常", e)
+            // 确保重置输入法
+            executeInputCommand("ime reset")
+            return false
+        }
     }
     
     /**
