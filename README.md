@@ -12,6 +12,7 @@
 - **系统 TTS 语音播报**：集成系统文本转语音功能，实时播报任务状态和消息内容
 - **聊天记录持久化**：保存用户与ai的对话
 - **执行时长播报**：结束时语音播报耗时并震动
+- **支持Shizuku**：支持使用Shizuku + [ADBKeyBoard](https://github.com/senzhk/ADBKeyBoard) 来实现输入文本成功率
 
 ### 🔧 功能调整  
 - **移除语音输入模块**：简化交互方式，专注于文本输入体验
@@ -57,6 +58,7 @@
 3. 开启无障碍服务权限
 4. 授予悬浮窗权限
 5. 开始使用智能助手功能
+6. (可选)如需使用Shuziku模式，请安装 [Shizuku](https://shizuku.rikka.app/download/) + [ADBKeyBoard](https://github.com/senzhk/ADBKeyBoard)
 
 ## 配置说明
 
@@ -104,3 +106,5 @@
 
 ### v1.0.2
 - 结束时语音播报耗时
+
+### v1.1.0
