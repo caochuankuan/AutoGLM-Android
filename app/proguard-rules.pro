@@ -79,3 +79,19 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# Shizuku 混淆规则
+-keep class rikka.shizuku.ShizukuRemoteProcess {
+    public *;
+}
+
+-keep class rikka.shizuku.ShizukuProvider {
+    public *;
+}
+
+# 保留 Shizuku 的 private static newProcess 方法
+-keepclassmembers class rikka.shizuku.Shizuku {
+    private static *** newProcess(...);
+}
+
+-keepattributes *Annotation*
