@@ -15,19 +15,6 @@ class ActionExecutor(private val service: AutoGLMService) {
         val isShizukuEnabled = service.getSharedPreferences("app_settings", 0)
             .getBoolean("is_shizuku_enabled", false)
         
-        // 详细的模式检查和日志
-        val executionMode = when {
-            !isShizukuEnabled -> "ACCESSIBILITY_SERVICE"
-            !ShizukuHelper.isShizukuAvailable() -> "ACCESSIBILITY_SERVICE (Shizuku不可用)"
-            !ShizukuHelper.hasShizukuPermission() -> "ACCESSIBILITY_SERVICE (Shizuku无权限)"
-            else -> "SHIZUKU"
-        }
-        
-        Log.i("ActionExecutor", "=== 执行模式: $executionMode ===")
-        Log.d("ActionExecutor", "Shizuku设置启用: $isShizukuEnabled")
-        Log.d("ActionExecutor", "Shizuku服务可用: ${ShizukuHelper.isShizukuAvailable()}")
-        Log.d("ActionExecutor", "Shizuku权限状态: ${ShizukuHelper.hasShizukuPermission()}")
-        
         val useShizuku = isShizukuEnabled && ShizukuHelper.hasShizukuPermission()
         
         return when (action) {
