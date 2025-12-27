@@ -324,7 +324,7 @@ fun FloatingWindowContent(
             }
             .padding(16.dp),
         shape = RoundedCornerShape(24.dp),
-        color = Color.White.copy(alpha = 0.5f),
+        color = Color.White.copy(alpha = 0.8f),
         border = BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.2f)),
         shadowElevation = 0.dp
     ) {
