@@ -40,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import kotlin.math.roundToInt
 import android.speech.tts.TextToSpeech
+import androidx.compose.foundation.BorderStroke
 import java.util.*
 
 class FloatingWindowController(private val context: Context) : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
@@ -300,71 +301,41 @@ fun FloatingWindowContent(
     onAction: () -> Unit,
     onDrag: (Float, Float) -> Unit
 ) {
-    MaterialTheme {
-        Surface(
-            modifier = Modifier
-                .width(350.dp) // Fixed width for consistent dragging
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        onDrag(dragAmount.x, dragAmount.y)
-                    }
+    Surface(
+        modifier = Modifier
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount.x, dragAmount.y)
                 }
-                .padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White.copy(alpha = 0.7f),
-            shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    val isError = status.startsWith("Error") || status.startsWith("出错") || status.startsWith("运行异常")
-                    val titleText = when {
-                        isTaskRunning -> stringResource(R.string.fw_running)
-                        isError -> stringResource(R.string.fw_error_title)
-                        else -> stringResource(R.string.fw_ready_title)
-                    }
-                    val titleColor = when {
-                        isTaskRunning -> Color.Gray
-                        isError -> MaterialTheme.colorScheme.error
-                        else -> Color(0xFF4CAF50)
-                    }
-
-//                    Text(
-//                        text = titleText,
-//                        style = MaterialTheme.typography.labelSmall,
-//                        color = titleColor
-//                    )
-                    Text(
-                        text = status,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1
-                    )
-                }
-
-                Text(
-                    if (isTaskRunning) stringResource(R.string.fw_stop) else stringResource(R.string.fw_return_app),
-                    modifier = Modifier.clickable { onAction() },
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                    color = if (isTaskRunning) Color.Gray else Color.Green.copy(alpha = 0.7f)
-                )
-                
-//                TextButton(
-//                    onClick = onAction,
-//                    colors = ButtonDefaults.buttonColors(
-//                        containerColor = if (isTaskRunning) Color(0xFFFFEBEE).copy(alpha = 0.5f) else Color(0xFFE3F2FD).copy(alpha = 0.7f),
-//                    ),
-//                    shape = RoundedCornerShape(50),
-//                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-//                ) {
-//                    Text(if (isTaskRunning) stringResource(R.string.fw_stop) else stringResource(R.string.fw_return_app))
-//                }
             }
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White.copy(alpha = 0.5f),
+        border = BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.2f)),
+        shadowElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = status,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1
+                )
+            }
+
+            Text(
+                if (isTaskRunning) stringResource(R.string.fw_stop) else stringResource(R.string.fw_return_app),
+                modifier = Modifier.clickable { onAction() },
+                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                color = if (isTaskRunning) Color.Gray else Color.Green.copy(alpha = 0.7f)
+            )
         }
     }
 }
