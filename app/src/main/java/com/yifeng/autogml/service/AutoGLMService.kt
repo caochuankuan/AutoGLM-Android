@@ -57,12 +57,12 @@ class AutoGLMService : AccessibilityService() {
         return super.onUnbind(intent)
     }
 
-    fun showFloatingWindow(onStop: () -> Unit) {
+    fun showFloatingWindow(onStop: () -> Unit, onGetLatestReply: () -> String = { "" }) {
         Handler(Looper.getMainLooper()).post {
             if (floatingWindowController == null) {
                 floatingWindowController = FloatingWindowController(this)
             }
-            floatingWindowController?.show(onStop)
+            floatingWindowController?.show(onStop, onGetLatestReply)
         }
     }
 

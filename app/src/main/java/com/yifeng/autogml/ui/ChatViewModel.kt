@@ -732,9 +732,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             if (!DEBUG_MODE && service != null) {
                 // Show floating window and minimize app
                 withContext(Dispatchers.Main) {
-                    service.showFloatingWindow {
-                        stopTask()
-                    }
+                    service.showFloatingWindow(
+                        onStop = { stopTask() },
+                        onGetLatestReply = { 
+                            _uiState.value.messages.lastOrNull()?.content ?: ""
+                        }
+                    )
                     service.setTaskRunning(true)
                     service.goHome()
                 }

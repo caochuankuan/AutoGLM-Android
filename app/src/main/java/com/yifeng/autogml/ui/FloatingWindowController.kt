@@ -41,7 +41,10 @@ import androidx.compose.ui.res.stringResource
 import kotlin.math.roundToInt
 import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.BorderStroke
-import java.util.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextOverflow
+import java.util.Locale
 
 class FloatingWindowController(private val context: Context) : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -55,6 +58,8 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
     private var _statusText by mutableStateOf("")
     private var _isTaskRunning by mutableStateOf(true)
     private var _onStopClick: (() -> Unit)? = null
+    private var _latestReply by mutableStateOf("")
+    private var _showLatestReply by mutableStateOf(false)
     
     // TTS for status text
     private var tts: TextToSpeech? = null
@@ -79,7 +84,7 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
         }
     }
 
-    fun show(onStop: () -> Unit) {
+    fun show(onStop: () -> Unit, onGetLatestReply: () -> String = { "" }) {
         if (isShowing) return
         _onStopClick = onStop
         _isTaskRunning = true
@@ -91,7 +96,7 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
         val screenHeight = metrics.heightPixels
 
         windowParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -113,6 +118,11 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
                 FloatingWindowContent(
                     status = _statusText,
                     isTaskRunning = _isTaskRunning,
+                    showLatestReply = _showLatestReply,
+                    onGetLatestReply = onGetLatestReply,
+                    onStatusClick = { 
+                        _showLatestReply = !_showLatestReply
+                    },
                     onAction = {
                         if (_isTaskRunning) {
                             _onStopClick?.invoke()
@@ -217,7 +227,7 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
                 windowParams.height = 0
             } else {
                 windowParams.flags = windowParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
-                windowParams.width = WindowManager.LayoutParams.WRAP_CONTENT
+                windowParams.width = WindowManager.LayoutParams.MATCH_PARENT
                 windowParams.height = WindowManager.LayoutParams.WRAP_CONTENT
             }
             windowManager.updateViewLayout(floatView, windowParams)
@@ -298,6 +308,9 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
 fun FloatingWindowContent(
     status: String,
     isTaskRunning: Boolean,
+    showLatestReply: Boolean,
+    onGetLatestReply: () -> String,
+    onStatusClick: () -> Unit,
     onAction: () -> Unit,
     onDrag: (Float, Float) -> Unit
 ) {
@@ -323,19 +336,60 @@ fun FloatingWindowContent(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = status,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1
-                )
+                Box {
+                    val displayText = if (showLatestReply) onGetLatestReply() else status
+                    // 描边文字 (背景层)
+                    Text(
+                        text = displayText,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            drawStyle = Stroke(width = 6f)
+                        ),
+                        color = Color.Black.copy(alpha = 0.5f),
+                        maxLines = if (showLatestReply) 5 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onStatusClick() }
+                    )
+                    // 正常文字 (前景层)
+                    Text(
+                        text = displayText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        maxLines = if (showLatestReply) 5 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onStatusClick() }
+                    )
+                }
             }
 
-            Text(
-                if (isTaskRunning) stringResource(R.string.fw_stop) else stringResource(R.string.fw_return_app),
-                modifier = Modifier.clickable { onAction() },
-                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                color = if (isTaskRunning) Color.Gray else Color.Green.copy(alpha = 0.7f)
-            )
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Box {
+                val buttonText = if (isTaskRunning) stringResource(R.string.fw_stop) else stringResource(R.string.fw_return_app)
+                val buttonColor = if (isTaskRunning) Color.Gray else Color.Green.copy(alpha = 0.7f)
+                
+                // 描边文字 (背景层)
+                Text(
+                    text = buttonText,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        drawStyle = Stroke(width = 1f)
+                    ),
+                    color = Color.Black,
+                    modifier = Modifier.clickable { onAction() }
+                )
+                // 正常文字 (前景层)
+                Text(
+                    text = buttonText,
+                    color = buttonColor,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                    modifier = Modifier.clickable { onAction() }
+                )
+            }
         }
     }
 }
