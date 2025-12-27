@@ -29,7 +29,7 @@
     <string name="base_url_hint_openai">示例: https://api.deepseek.com 或 https://api.deepseek.com/v1 (请勿包含 /chat/completions)</string>
     <string name="model_name_label">模型名称</string>
     <string name="enter_model_name">填入模型名称</string>
-    <string name="model_name_placeholder">autoglm-phone-9b</string>
+    <string name="model_name_placeholder">autoglm-phone</string>
     <string name="api_type_label">API 类型</string>
     <string name="api_type_openai">OpenAI (智谱/ChatGPT/DeepSeek/自建服务器等)</string>
     <string name="api_type_openai_title">OpenAI</string>

@@ -129,7 +129,7 @@ class ModelClient(
 
         try {
             // Default model fallback if not specified properly for Gemini
-            val model = if (modelName.isBlank() || modelName == "autoglm-phone-9b") "gemini-1.5-flash-latest" else modelName
+            val model = if (modelName.isBlank() || modelName == "autoglm-phone") "gemini-1.5-flash-latest" else modelName
             Log.d("AutoGLM_Debug", "Calling Gemini API with model: $model")
             val response = geminiApi.generateContent(model, apiKey, request)
             if (response.isSuccessful) {
