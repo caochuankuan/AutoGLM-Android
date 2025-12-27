@@ -49,7 +49,7 @@ data class ChatUiState(
     val apiKey: String = "",
     val baseUrl: String = "https://open.bigmodel.cn/api/paas/v4", // Official ZhipuAI Endpoint
     val isGemini: Boolean = false,
-    val modelName: String = "autoglm-phone",
+    val modelName: String = "autoglm-phone-9b",
     val isTtsEnabled: Boolean = true, // TTS开关，默认开启
     val isShizukuEnabled: Boolean = false, // Shizuku模式开关，默认关闭
     // 聊天记录相关状态
@@ -93,7 +93,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         
         val savedBaseUrl = prefs.getString("base_url", "https://open.bigmodel.cn/api/paas/v4") ?: "https://open.bigmodel.cn/api/paas/v4"
         val savedIsGemini = prefs.getBoolean("is_gemini", false)
-        val savedModelName = prefs.getString("model_name", "autoglm-phone") ?: "autoglm-phone"
+        val savedModelName = prefs.getString("model_name", "autoglm-phone-9b") ?: "autoglm-phone-9b"
         val savedIsTtsEnabled = prefs.getBoolean("is_tts_enabled", true) // 默认开启TTS
         val savedIsShizukuEnabled = prefs.getBoolean("is_shizuku_enabled", false) // 默认关闭Shizuku
         
@@ -260,7 +260,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         } else baseUrl
         
         val finalModelName = if (modelName.isBlank()) {
-            if (isGemini) "gemini-2.0-flash-exp" else "autoglm-phone"
+            if (isGemini) "gemini-2.0-flash-exp" else "autoglm-phone-9b"
         } else modelName
         
         // Save to SharedPreferences

@@ -225,7 +225,7 @@ fun SettingsScreen(
                                     onClick = {
                                         newIsGemini = false
                                         newBaseUrl = "https://open.bigmodel.cn/api/paas/v4"
-                                        newModelName = "autoglm-phone"
+                                        newModelName = "autoglm-phone-9b"
                                         typeExpanded = false
                                     }
                                 )
@@ -591,7 +591,7 @@ fun SettingsScreenPreview() {
         apiKey = "sk-...",
         baseUrl = "https://open.bigmodel.cn/api/paas/v4",
         isGemini = false,
-        modelName = "autoglm-phone",
+        modelName = "autoglm-phone-9b",
         isTtsEnabled = true,
         isShizukuEnabled = false,
         onSave = { _, _, _, _, _, _ -> },
