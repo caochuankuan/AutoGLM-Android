@@ -58,7 +58,6 @@ class FloatingWindowController(private val context: Context) : LifecycleOwner, V
     private var _statusText by mutableStateOf("")
     private var _isTaskRunning by mutableStateOf(true)
     private var _onStopClick: (() -> Unit)? = null
-    private var _latestReply by mutableStateOf("")
     private var _showLatestReply by mutableStateOf(false)
     
     // TTS for status text

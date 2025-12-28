@@ -64,7 +64,7 @@ class ChatHistoryManager private constructor() {
         return try {
             val type = object : TypeToken<List<ChatSession>>() {}.type
             gson.fromJson(json, type) ?: emptyList()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -181,7 +181,7 @@ class ChatHistoryManager private constructor() {
         return try {
             val type = object : TypeToken<List<ChatMessage>>() {}.type
             gson.fromJson(json, type) ?: emptyList()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -215,18 +215,6 @@ class ChatHistoryManager private constructor() {
                 val hasMore = startIndex > 0
                 PagedResult(items, hasMore, totalCount)
             }
-        }
-    }
-    
-    /**
-     * 获取指定会话的最新N条消息
-     */
-    fun getRecentMessages(sessionId: String, limit: Int = PAGE_SIZE): List<ChatMessage> {
-        val allMessages = getMessages(sessionId)
-        return if (allMessages.size <= limit) {
-            allMessages
-        } else {
-            allMessages.takeLast(limit)
         }
     }
     
@@ -274,38 +262,5 @@ class ChatHistoryManager private constructor() {
             allMessages.addAll(searchMessages(session.id, query))
         }
         return allMessages.sortedByDescending { it.timestamp }
-    }
-    
-    // ==================== 数据管理 ====================
-    
-    /**
-     * 清空所有数据
-     */
-    fun clearAllData() {
-        mmkv.clearAll()
-    }
-    
-    /**
-     * 获取存储大小（字节）
-     */
-    fun getStorageSize(): Long {
-        return mmkv.totalSize()
-    }
-    
-    /**
-     * 导出数据为JSON字符串
-     */
-    fun exportData(): String {
-        val sessions = getSessions()
-        val exportData = mutableMapOf<String, Any>()
-        exportData["sessions"] = sessions
-        
-        val messagesData = mutableMapOf<String, List<ChatMessage>>()
-        sessions.forEach { session ->
-            messagesData[session.id] = getMessages(session.id)
-        }
-        exportData["messages"] = messagesData
-        
-        return gson.toJson(exportData)
     }
 }

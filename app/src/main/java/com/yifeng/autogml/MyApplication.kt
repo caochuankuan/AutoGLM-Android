@@ -9,7 +9,6 @@ class MyApplication : Application() {
         super.onCreate()
         AppMapper.init(this)
         
-        // 初始化MMKV
         ChatHistoryManager.getInstance().initialize(this)
     }
 }

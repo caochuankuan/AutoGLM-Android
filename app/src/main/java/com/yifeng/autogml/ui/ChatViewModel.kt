@@ -17,8 +17,6 @@ import com.yifeng.autogml.service.AutoGLMService
 import com.yifeng.autogml.R
 import com.yifeng.autogml.database.ChatHistoryManager
 import com.yifeng.autogml.database.ChatSession
-import com.yifeng.autogml.database.ChatMessage
-import com.yifeng.autogml.database.PagedResult
 import java.text.SimpleDateFormat
 import java.util.Date
 import android.os.Build
@@ -34,7 +32,6 @@ import kotlinx.coroutines.withContext
 import android.content.ComponentName
 import android.text.TextUtils
 import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeech.OnInitListener
 
 import com.yifeng.autogml.BuildConfig
 import com.yifeng.autogml.shizuku.ShizukuHelper
@@ -227,17 +224,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
-    /**
-     * 检查Shizuku状态
-     */
-    fun checkShizukuStatus(): String {
-        return when {
-            !ShizukuHelper.isShizukuAvailable() -> "Shizuku服务未运行"
-            !ShizukuHelper.hasShizukuPermission() -> "Shizuku权限未授予"
-            else -> "Shizuku已就绪"
-        }
-    }
-    
     override fun onCleared() {
         super.onCleared()
         textToSpeech?.shutdown()
@@ -301,11 +287,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (isShizukuEnabled) {
             initShizuku()
         }
-    }
-
-    fun updateApiKey(apiKey: String) {
-        // Deprecated, use updateSettings instead but keeping for compatibility if needed temporarily
-        updateSettings(apiKey, _uiState.value.baseUrl, _uiState.value.isGemini, _uiState.value.modelName, _uiState.value.isTtsEnabled)
     }
 
     fun checkServiceStatus() {
@@ -443,124 +424,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
-     * 切换到指定会话
-     */
-    fun switchToSession(sessionId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                chatHistoryManager.setCurrentSession(sessionId)
-                val session = chatHistoryManager.getSessions().find { it.id == sessionId }
-                
-                if (session != null) {
-                    val messagesResult = chatHistoryManager.getMessagesPaged(sessionId, 0)
-                    val messages = messagesResult.items.map { chatMessage ->
-                        UiMessage(
-                            role = chatMessage.role,
-                            content = chatMessage.content,
-                            timestamp = chatMessage.timestamp,
-                            id = chatMessage.id
-                        )
-                    }
-                    
-                    withContext(Dispatchers.Main) {
-                        _uiState.value = _uiState.value.copy(
-                            currentSession = session,
-                            messages = messages,
-                            hasMoreMessages = messagesResult.hasMore
-                        )
-                        apiHistory.clear()
-                        currentMessagePage = 0
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Failed to switch session", e)
-            }
-        }
-    }
-    
-    /**
-     * 删除会话
-     */
-    fun deleteSession(sessionId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                chatHistoryManager.deleteSession(sessionId)
-                
-                // 如果删除的是当前会话，创建新会话
-                if (_uiState.value.currentSession?.id == sessionId) {
-                    val newSession = chatHistoryManager.createSession()
-                    withContext(Dispatchers.Main) {
-                        _uiState.value = _uiState.value.copy(
-                            currentSession = newSession,
-                            messages = emptyList(),
-                            hasMoreMessages = false
-                        )
-                        apiHistory.clear()
-                        currentMessagePage = 0
-                    }
-                }
-                
-                // 重新加载会话列表
-                loadSessions()
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Failed to delete session", e)
-            }
-        }
-    }
-    
-    /**
-     * 更新会话标题
-     */
-    fun updateSessionTitle(sessionId: String, title: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                chatHistoryManager.updateSession(sessionId, title)
-                
-                // 更新UI状态
-                val sessions = _uiState.value.sessions.map { session ->
-                    if (session.id == sessionId) {
-                        session.copy(title = title, updatedAt = System.currentTimeMillis())
-                    } else session
-                }
-                
-                val currentSession = if (_uiState.value.currentSession?.id == sessionId) {
-                    _uiState.value.currentSession?.copy(title = title, updatedAt = System.currentTimeMillis())
-                } else _uiState.value.currentSession
-                
-                withContext(Dispatchers.Main) {
-                    _uiState.value = _uiState.value.copy(
-                        sessions = sessions,
-                        currentSession = currentSession
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Failed to update session title", e)
-            }
-        }
-    }
-    
-    /**
-     * 加载更多会话
-     */
-    fun loadMoreSessions() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val currentPage = _uiState.value.sessions.size / 20
-                val sessionsResult = chatHistoryManager.getSessionsPaged(currentPage)
-                
-                withContext(Dispatchers.Main) {
-                    _uiState.value = _uiState.value.copy(
-                        sessions = _uiState.value.sessions + sessionsResult.items,
-                        hasMoreSessions = sessionsResult.hasMore
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Failed to load more sessions", e)
-            }
-        }
-    }
-    
-    /**
      * 加载更多消息（加载更早的历史消息）
      */
     fun loadMoreMessages() {
@@ -614,17 +477,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to load sessions", e)
             }
-        }
-    }
-    
-    /**
-     * 搜索消息
-     */
-    fun searchMessages(query: String): List<ChatMessage> {
-        return if (query.isBlank()) {
-            emptyList()
-        } else {
-            chatHistoryManager.searchAllMessages(query)
         }
     }
     

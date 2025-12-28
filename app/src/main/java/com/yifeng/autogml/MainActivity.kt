@@ -23,7 +23,6 @@ class  MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Apply saved locale before super.onCreate
-        val prefs = getSharedPreferences("app_settings", MODE_PRIVATE)
         val config = resources.configuration
         resources.updateConfiguration(config, resources.displayMetrics)
 
@@ -68,11 +67,5 @@ class  MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun setAppLocale(languageCode: String) {
-        val prefs = getSharedPreferences("app_settings", MODE_PRIVATE)
-        prefs.edit().putString("language_code", languageCode).apply()
-        recreate()
     }
 }

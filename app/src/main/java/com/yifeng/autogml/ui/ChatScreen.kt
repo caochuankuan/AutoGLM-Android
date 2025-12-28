@@ -72,10 +72,6 @@ fun ChatScreen(
     var lastMessageCount by remember { mutableStateOf(0) }
     var lastMessageId by remember { mutableStateOf("") }
 
-    // Voice Review State
-    var showVoiceReview by remember { mutableStateOf(false) }
-    var voiceResultText by remember { mutableStateOf("") }
-
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val listState = rememberLazyListState()
