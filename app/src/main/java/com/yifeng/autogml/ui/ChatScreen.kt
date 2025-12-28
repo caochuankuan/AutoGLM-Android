@@ -6,20 +6,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
 
 import android.net.Uri
 import android.content.Intent
@@ -35,23 +37,20 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.activity.ComponentActivity
 import android.widget.Toast
-
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.animation.core.*
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import android.util.Log
 import android.speech.tts.TextToSpeech
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.window.Dialog
 import java.util.*
 
 fun Context.findActivity(): ComponentActivity? = when (this) {
@@ -184,7 +183,10 @@ fun ChatScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
                             scope.launch {
                                 // 点击标题滚动到最新消息（底部）
                                 if (uiState.messages.isNotEmpty()) {
@@ -193,14 +195,6 @@ fun ChatScreen(
                             }
                         }
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.logo),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
                         Text(
                             text = stringResource(R.string.chat_title),
                             style = MaterialTheme.typography.titleLarge,
@@ -222,26 +216,67 @@ fun ChatScreen(
                     var showClearDialog by remember { mutableStateOf(false) }
 
                     if (showClearDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showClearDialog = false },
-                            title = { Text(stringResource(R.string.clear_chat_title)) },
-                            text = { Text(stringResource(R.string.clear_chat_message)) },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        viewModel.clearMessages()
-                                        showClearDialog = false
-                                    }
+                        Dialog(
+                            onDismissRequest = { showClearDialog = false }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.White, shape = RoundedCornerShape(16.dp))
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.clear_chat_title),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                
+                                Text(
+                                    text = stringResource(R.string.clear_chat_message),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.padding(bottom = 24.dp)
+                                )
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    Text(stringResource(R.string.confirm))
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showClearDialog = false }) {
-                                    Text(stringResource(R.string.cancel))
+                                    OutlinedButton(
+                                        onClick = { showClearDialog = false },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = Color.Gray
+                                        ),
+                                        border = BorderStroke(1.dp, Color.Gray)
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.cancel),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                    Button(
+                                        onClick = {
+                                            viewModel.clearMessages()
+                                            showClearDialog = false
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFFFF5722)
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.confirm),
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
                                 }
                             }
-                        )
+                        }
                     }
 
                     IconButton(onClick = { showClearDialog = true }) {
@@ -262,7 +297,7 @@ fun ChatScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF7F8FA)) // Light gray background like Doubao
+                .background(Color(0xffededed))
         ) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(paddingValues)
@@ -321,26 +356,57 @@ fun ChatScreen(
                 }
 
                 // Input Area (Bottom)
-                Surface(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    shadowElevation = 0.dp,
-                    color = Color(0xFFA4F3B9).copy(alpha = 0.1f)
+                        .background(Color(0xfff7f7f7))
+                        .padding(bottom = 16.dp),
                 ) {
+                    // 进入动画配置（较慢，更平滑）
+                    val enterFloatAnimationSpec = tween<Float>(
+                        durationMillis = 300,
+                        easing = FastOutSlowInEasing
+                    )
+                    
+                    val enterSizeAnimationSpec = tween<IntSize>(
+                        durationMillis = 300,
+                        easing = FastOutSlowInEasing
+                    )
+                    
+                    val enterOffsetAnimationSpec = tween<IntOffset>(
+                        durationMillis = 300,
+                        easing = FastOutSlowInEasing
+                    )
+                    
+                    // 退出动画配置（更快，立即响应）
+                    val exitFloatAnimationSpec = tween<Float>(
+                        durationMillis = 150,
+                        easing = LinearEasing
+                    )
+                    
+                    val exitSizeAnimationSpec = tween<IntSize>(
+                        durationMillis = 150,
+                        easing = LinearEasing
+                    )
+                    
+                    val exitOffsetAnimationSpec = tween<IntOffset>(
+                        durationMillis = 150,
+                        easing = LinearEasing
+                    )
+                    
                     Row(
                         modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                            .padding(horizontal = 8.dp, vertical = 8.dp)
+                            .animateContentSize(animationSpec = enterSizeAnimationSpec),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Spacer(modifier = Modifier.width(1.dp))
+                        
                         TextField(
                             value = inputText,
                             onValueChange = { inputText = it },
-                            modifier = Modifier
-                                .weight(1f),
+                            modifier = Modifier.weight(1f),
                             placeholder = {
                                 Text(
                                     stringResource(R.string.input_placeholder),
@@ -358,152 +424,146 @@ fun ChatScreen(
                             maxLines = 3
                         )
 
-                        // Send Button
-                        IconButton(
-                            onClick = {
-                                viewModel.sendMessage(inputText)
-                                inputText = ""
-                                
-                                // 播放欢迎语音
-                                if (isTtsReady && tts != null && uiState.isTtsEnabled) {
-                                    tts!!.stop()
-                                    tts!!.speak(
-                                        "欢迎使用遇见手机助手，马上开始为你执行",
-                                        TextToSpeech.QUEUE_FLUSH,
-                                        null,
-                                        null
-                                    )
-                                }
-                            },
-                            enabled = !uiState.isLoading && inputText.isNotBlank()
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.send),
-                                contentDescription = stringResource(R.string.send_button),
-                                tint = if (!uiState.isLoading && inputText.isNotBlank()) Color.Unspecified else Color.Gray,
-                                modifier = Modifier.size(24.dp)
+                        // Send Button with Animation
+                        AnimatedVisibility(
+                            visible = !uiState.isLoading && inputText.isNotBlank(),
+                            enter = slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = enterOffsetAnimationSpec
+                            ) + fadeIn(animationSpec = enterFloatAnimationSpec) + scaleIn(
+                                initialScale = 0.8f,
+                                animationSpec = enterFloatAnimationSpec
+                            ),
+                            exit = slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = exitOffsetAnimationSpec
+                            ) + fadeOut(animationSpec = exitFloatAnimationSpec) + scaleOut(
+                                targetScale = 0.8f,
+                                animationSpec = exitFloatAnimationSpec
                             )
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    viewModel.sendMessage(inputText)
+                                    inputText = ""
+
+                                    // 播放欢迎语音
+                                    if (isTtsReady && tts != null && uiState.isTtsEnabled) {
+                                        tts!!.stop()
+                                        tts!!.speak(
+                                            "欢迎使用遇见手机助手，马上开始为你执行",
+                                            TextToSpeech.QUEUE_FLUSH,
+                                            null,
+                                            null
+                                        )
+                                    }
+                                },
+                                enabled = inputText.isNotBlank()
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.send),
+                                    contentDescription = stringResource(R.string.send_button),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        
+                        // Spacer when send button is not visible to maintain consistent spacing
+                        if (uiState.isLoading || inputText.isBlank()) {
+                            Spacer(modifier = Modifier.width(2.dp))
                         }
                     }
                 }
             }
 
-            // Error / Service Check Overlay (Topmost)
+            // Permission Status Overlay
             if (uiState.error != null || uiState.missingAccessibilityService || uiState.missingOverlayPermission) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f))
+                        .background(Color.Black.copy(alpha = 0.6f))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) {},
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 32.dp),
+                        color = Color.White,
+                        shape = RoundedCornerShape(16.dp),
+                        shadowElevation = 12.dp
                     ) {
-                        if (uiState.missingAccessibilityService) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 32.dp),
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = MaterialTheme.shapes.medium,
-                                shadowElevation = 8.dp
-                            ) {
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    Column(
-                                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.accessibility_error),
-                                            color = MaterialTheme.colorScheme.onErrorContainer,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                        )
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Button(
-                                            onClick = {
-                                                val intent =
-                                                    Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                context.startActivity(intent)
-                                            }
-                                        ) {
-                                            Text(stringResource(R.string.enable_action))
-                                        }
-                                    }
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // 错误信息
+                            if (uiState.error != null) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = uiState.error!!,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                                Button(
+                                    onClick = { viewModel.clearError() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error
+                                    ),
+                                    modifier = Modifier.padding(top = 8.dp)
+                                ) {
+                                    Text(stringResource(R.string.close), color = Color.White)
                                 }
-                            }
-                        }
+                            } else {
+                                // 权限说明
+                                Text(
+                                    text = "应用需要以下权限才能正常工作：",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                                
+                                // 无障碍服务权限
+                                PermissionRow(
+                                    title = "无障碍服务",
+                                    description = "用于自动化操作和屏幕内容识别",
+                                    isGranted = !uiState.missingAccessibilityService,
+                                    onActionClick = {
+                                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        context.startActivity(intent)
+                                    }
+                                )
 
-                        if (uiState.missingOverlayPermission) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 32.dp),
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = MaterialTheme.shapes.medium,
-                                shadowElevation = 8.dp
-                            ) {
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    Column(
-                                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.overlay_error),
-                                            color = MaterialTheme.colorScheme.onErrorContainer,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                // 悬浮窗权限
+                                PermissionRow(
+                                    title = "悬浮窗权限",
+                                    description = "用于显示悬浮控制面板和操作提示",
+                                    isGranted = !uiState.missingOverlayPermission,
+                                    onActionClick = {
+                                        val intent = Intent(
+                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                            Uri.parse("package:${context.packageName}")
                                         )
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Button(
-                                            onClick = {
-                                                val intent = Intent(
-                                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                                    Uri.parse("package:${context.packageName}")
-                                                )
-                                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                context.startActivity(intent)
-                                            }
-                                        ) {
-                                            Text(stringResource(R.string.grant_action))
-                                        }
+                                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        context.startActivity(intent)
                                     }
-                                }
-                            }
-                        }
+                                )
 
-                        if (uiState.error != null) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 32.dp),
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = MaterialTheme.shapes.medium,
-                                shadowElevation = 8.dp
-                            ) {
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    Column(
-                                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = uiState.error!!,
-                                            color = MaterialTheme.colorScheme.onErrorContainer,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                        )
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Button(onClick = { viewModel.clearError() }) {
-                                            Text(stringResource(R.string.close))
-                                        }
-                                    }
-                                }
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                Text(
+                                    text = "Tips: 在MIUI/HyperOS上，电池优化改为无限制，开启自启动，可避免每次打开app 都需要授权无障碍服务",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
                             }
                         }
                     }
@@ -546,7 +606,7 @@ fun MessageItem(
                     )
                 ),
             color = containerColor,
-            shadowElevation = if (isUser) 0.dp else 2.dp,
+            shadowElevation = if (isUser) 0.dp else 0.dp,
             modifier = Modifier
                 .widthIn(max = 300.dp)
                 .pointerInput(Unit) {
@@ -583,6 +643,95 @@ fun MessageItem(
                     style = MaterialTheme.typography.bodyLarge,
                     color = contentColor
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun PermissionRow(
+    title: String,
+    description: String? = null,
+    isGranted: Boolean,
+    onActionClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 状态图标
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(
+                        color = if (isGranted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isGranted) Icons.Default.Check else Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier.weight(1f).padding(start = 12.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black
+                )
+
+                // 描述文本
+                if (description != null) {
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+            
+            // 状态或按钮
+            Box(
+                modifier = Modifier
+                    .width(80.dp)
+                    .height(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isGranted) {
+                    Text(
+                        text = "已授权",
+                        color = Color(0xFF4CAF50),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                    )
+                } else {
+                    Button(
+                        onClick = onActionClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = "去设置",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             }
         }
     }

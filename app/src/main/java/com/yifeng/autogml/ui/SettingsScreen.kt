@@ -2,10 +2,10 @@ package com.yifeng.autogml.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
@@ -65,88 +66,112 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = { 
+                    Text(
+                        text = stringResource(R.string.settings_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.Black
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            painter = painterResource(R.drawable.back),
+                            contentDescription = stringResource(R.string.back),
+                            tint = Color.Black
                         )
                     }
                 },
-                actions = {}
+                actions = {},
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color(0xFFFAFAFA)
+                )
             )
-        }
+        },
+        containerColor = Color(0xFFF5F5F5)
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             if (!isEditing) {
                 // View Mode: Show masked key + Edit button
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Text(
+                            text = "API 配置",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Black,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        
+                        // API Key Section
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
                                 text = stringResource(R.string.api_key_label),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
+                            Text(
+                                text = if (isDefaultKey) stringResource(R.string.api_key_default_masked) else getMaskedKey(apiKey),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Black
+                            )
                         }
-                        Text(
-                            text = if (isDefaultKey) stringResource(R.string.api_key_default_masked) else getMaskedKey(apiKey),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        // Model Name Section
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = stringResource(R.string.model_name_label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = modelName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Black
+                            )
+                        }
 
-                        Text(
-                            text = stringResource(R.string.model_name_label),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = modelName,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        // API Type Section
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = stringResource(R.string.api_type_label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = if (isGemini) stringResource(R.string.api_type_gemini) else stringResource(R.string.api_type_openai),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Black
+                            )
+                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = stringResource(R.string.api_type_label),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = if (isGemini) stringResource(R.string.api_type_gemini) else stringResource(R.string.api_type_openai),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = stringResource(R.string.base_url_label),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = baseUrl,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        // Base URL Section
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = stringResource(R.string.base_url_label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = baseUrl,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Black
+                            )
+                        }
 
                         Button(
                             onClick = { 
@@ -157,9 +182,19 @@ fun SettingsScreen(
                                 newModelName = modelName
                                 newIsTtsEnabled = isTtsEnabled
                             },
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(stringResource(R.string.edit_api_key))
+                            Text(
+                                text = stringResource(R.string.edit_api_key),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
                         }
                     }
                 }
@@ -167,23 +202,19 @@ fun SettingsScreen(
                 // Edit Mode: Input field
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.settings_title), // Changed label since we moved API Key
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        Text(
+                            text = "编辑 API 配置",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Black
+                        )
 
                         // 1. API Type Selection (Dropdown)
                         var typeExpanded by remember { mutableStateOf(false) }
@@ -199,7 +230,11 @@ fun SettingsScreen(
                                 readOnly = true,
                                 label = { Text(stringResource(R.string.api_type_label)) },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
-                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                                ),
+                                shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.fillMaxWidth().menuAnchor()
                             )
 
@@ -257,6 +292,11 @@ fun SettingsScreen(
                                 onDone = { keyboardController?.hide() }
                             ),
                             placeholder = { Text(stringResource(R.string.base_url_placeholder)) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
                             supportingText = {
                                 Text(
                                     text = if (newIsGemini) stringResource(R.string.base_url_hint_gemini) 
@@ -289,7 +329,11 @@ fun SettingsScreen(
                                     label = { Text(stringResource(R.string.enter_model_name)) },
                                     modifier = Modifier.fillMaxWidth().menuAnchor(),
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded) },
-                                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(
                                         onDone = { keyboardController?.hide() }
@@ -322,6 +366,11 @@ fun SettingsScreen(
                                 keyboardActions = KeyboardActions(
                                     onDone = { keyboardController?.hide() }
                                 ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                                ),
+                                shape = RoundedCornerShape(12.dp),
                                 placeholder = { Text(stringResource(R.string.model_name_placeholder)) }
                             )
                         }
@@ -350,6 +399,11 @@ fun SettingsScreen(
                             keyboardActions = KeyboardActions(
                                 onDone = { keyboardController?.hide() }
                             ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
                             placeholder = { 
                                 Text(
                                     if (isDefaultKey) stringResource(R.string.api_key_default_edit_placeholder) 
@@ -360,25 +414,34 @@ fun SettingsScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Button(onClick = {
-                                if (apiKey.isNotEmpty()) {
-                                    isEditing = false
-                                    newKey = if (isDefaultKey) "" else apiKey
-                                    newBaseUrl = baseUrl
-                                    newIsGemini = isGemini
-                                    newModelName = modelName
-                                    newIsTtsEnabled = isTtsEnabled
-                                    newIsShizukuEnabled = isShizukuEnabled
-                                    newIsShizukuEnabled = isShizukuEnabled
-                                } else {
-                                    onBack()
-                                }
-                            }) {
-                                Text(stringResource(R.string.cancel))
+                            OutlinedButton(
+                                onClick = {
+                                    if (apiKey.isNotEmpty()) {
+                                        isEditing = false
+                                        newKey = if (isDefaultKey) "" else apiKey
+                                        newBaseUrl = baseUrl
+                                        newIsGemini = isGemini
+                                        newModelName = modelName
+                                        newIsTtsEnabled = isTtsEnabled
+                                        newIsShizukuEnabled = isShizukuEnabled
+                                        newIsShizukuEnabled = isShizukuEnabled
+                                    } else {
+                                        onBack()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color.Gray
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.cancel),
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 onClick = { 
                                     // Allow saving empty key (to restore default) or valid key
@@ -387,9 +450,17 @@ fun SettingsScreen(
                                 },
                                 // Enable save button if key is not blank OR if user cleared it (to reset to default)
                                 // Actually, if user clears it, we interpret it as reset to default.
-                                enabled = true 
+                                enabled = true,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text(stringResource(R.string.save))
+                                Text(
+                                    text = stringResource(R.string.save),
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
                             }
                         }
                     }
@@ -399,24 +470,28 @@ fun SettingsScreen(
             // TTS Settings Card (独立的设置项)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(20.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.tts_enabled),
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.Black
                         )
                         Text(
                             text = stringResource(R.string.tts_enabled_description),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                     Switch(
@@ -425,7 +500,13 @@ fun SettingsScreen(
                             newIsTtsEnabled = it
                             // 立即保存TTS设置
                             onSave(apiKey, baseUrl, isGemini, modelName, it, isShizukuEnabled)
-                        }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color.Gray.copy(alpha = 0.5f)
+                        )
                     )
                 }
             }
@@ -433,13 +514,15 @@ fun SettingsScreen(
             // Shizuku Settings Card (独立的设置项)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -449,12 +532,14 @@ fun SettingsScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Shizuku模式",
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Black
                             )
                             Text(
                                 text = "使用Shizuku执行操作，需要先安装并启动Shizuku服务",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                         Switch(
@@ -476,7 +561,13 @@ fun SettingsScreen(
                                     newIsShizukuEnabled = enabled
                                     onSave(apiKey, baseUrl, isGemini, modelName, isTtsEnabled, enabled)
                                 }
-                            }
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = Color.Gray.copy(alpha = 0.5f)
+                            )
                         )
                     }
                     
@@ -553,19 +644,21 @@ fun SettingsScreen(
             // Documentation Link
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = RoundedCornerShape(16.dp),
                 onClick = onOpenDocumentation
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .padding(20.dp)
                         .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
                         text = stringResource(R.string.view_documentation),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Icon(
