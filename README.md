@@ -84,7 +84,7 @@
 
 - **包名**：com.yifeng.autogml
 - **最低 SDK**：24 (Android 7.0)
-- **目标 SDK**：36 (Android 14)
+- **目标 SDK**：36 (Android 16)
 
 ## 原项目致谢
 
